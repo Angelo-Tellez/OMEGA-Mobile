@@ -3,11 +3,12 @@
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : home_docente_screen.dart
 // Created on : 21/04/2026
-// Created by : Jorge Alejandro Martínez Toris
+// Created by : Jorge Alejandro Martinez Toris
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 21/04/2026 - Dev - Pantalla principal del docente
+//   [001] Se pasa claveActiva al widget de sesion activa
+//   en lugar de obtenerla del modelo de sesion y agregar boton flotante.
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -56,30 +57,21 @@ class _HomeDocenteView extends StatelessWidget
             ? '${authState.usuario.nombre} ${authState.usuario.apPat}'
             : 'Docente';
 
-        return Scaffold(
-          appBar: _buildAppBar(context, nombreDocente),
-          body: BlocBuilder<HomeDocenteBloc, HomeDocenteState>(
-            builder: (context, state)
-            {
-              if (state is HomeDocenteLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.primaryCoral),
-                );
-              }
-
-              if (state is HomeDocenteError) {
-                return Center(
-                  child: Text(state.mensaje),
-                );
-              }
-
-              if (state is HomeDocenteLoaded) {
-                return _buildBody(context, state);
-              }
-
-              return const SizedBox.shrink();
-            },
-          ),
+        return BlocBuilder<HomeDocenteBloc, HomeDocenteState>(
+          builder: (context, state)
+          {
+            return Scaffold(
+              appBar:              _buildAppBar(context, nombreDocente),
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed:       () => context.push(AppRouter.agregarGrupo),
+                backgroundColor: AppColors.primaryCoral,
+                foregroundColor: AppColors.baseSurface,
+                icon:            const Icon(Icons.group_add_rounded),
+                label:           const Text('Nuevo grupo'),
+              ),
+              body: _buildBodyContent(context, state),
+            );
+          },
         );
       },
     );
@@ -108,7 +100,12 @@ class _HomeDocenteView extends StatelessWidget
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.logout_rounded),
+          icon:  const Icon(Icons.person_outline_rounded),
+          color: AppColors.neutralGrey,
+          onPressed: () => context.push(AppRouter.perfil),
+        ),
+        IconButton(
+          icon:  const Icon(Icons.logout_rounded),
           color: AppColors.neutralGrey,
           onPressed: () => _onLogout(context),
         ),
@@ -122,10 +119,29 @@ class _HomeDocenteView extends StatelessWidget
     context.go(AppRouter.login);
   }
 
+  Widget _buildBodyContent(BuildContext context, HomeDocenteState state)
+  {
+    if (state is HomeDocenteLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryCoral),
+      );
+    }
+
+    if (state is HomeDocenteError) {
+      return Center(child: Text(state.mensaje));
+    }
+
+    if (state is HomeDocenteLoaded) {
+      return _buildBody(context, state);
+    }
+
+    return const SizedBox.shrink();
+  }
+
   Widget _buildBody(BuildContext context, HomeDocenteLoaded state)
   {
     return RefreshIndicator(
-      color: AppColors.primaryCoral,
+      color:     AppColors.primaryCoral,
       onRefresh: () async
       {
         context.read<HomeDocenteBloc>().add(
@@ -133,11 +149,16 @@ class _HomeDocenteView extends StatelessWidget
         );
       },
       child: ListView(
-        padding: const EdgeInsets.all(AppSizes.paddingM),
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.paddingM,
+          AppSizes.paddingM,
+          AppSizes.paddingM,
+          AppSizes.paddingXL + AppSizes.heightButton,
+        ),
         children: [
           _buildInstitucionesSection(context, state),
           const SizedBox(height: AppSizes.paddingL),
-          if (state.sesionActiva != null) ...[
+          if (state.sesionActiva != null && state.claveActiva != null) ...[
             _buildSesionActivaSection(context, state),
             const SizedBox(height: AppSizes.paddingL),
           ],
@@ -194,6 +215,7 @@ class _HomeDocenteView extends StatelessWidget
         const SizedBox(height: AppSizes.paddingM),
         SesionActivaCardWidget(
           sesion:   state.sesionActiva!,
+          clave:    state.claveActiva!,
           onCerrar: () => _onCerrarSesion(context, state.sesionActiva!.id),
         ),
       ],
@@ -214,10 +236,13 @@ class _HomeDocenteView extends StatelessWidget
         const SizedBox(height: AppSizes.paddingM),
         if (state.grupos.isEmpty)
           Center(
-            child: Text(
-              'No tienes grupos en esta institucion',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.neutralGrey,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingXL),
+              child: Text(
+                'No tienes grupos en esta institucion',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.neutralGrey,
+                ),
               ),
             ),
           )
@@ -228,7 +253,10 @@ class _HomeDocenteView extends StatelessWidget
             onAbrirSesion:  () => context.read<HomeDocenteBloc>().add(
               SesionAbierta(grupoId: grupo.id),
             ),
-            onCerrarSesion: () => _onCerrarSesion(context, state.sesionActiva!.id),
+            onCerrarSesion: () => _onCerrarSesion(
+              context,
+              state.sesionActiva!.id,
+            ),
           )),
       ],
     );

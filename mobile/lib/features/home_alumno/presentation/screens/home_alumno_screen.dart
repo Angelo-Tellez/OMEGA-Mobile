@@ -24,6 +24,7 @@ import '../../bloc/home_alumno_event.dart';
 import '../../bloc/home_alumno_state.dart';
 import '../widgets/materia_card_widget.dart';
 import '../widgets/historial_card_widget.dart';
+import '../../../../core/config/app_router.dart';
 
 class HomeAlumnoScreen extends StatelessWidget
 {
@@ -94,6 +95,15 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
 
             return Scaffold(
               appBar: _buildAppBar(context, nombreAlumno),
+              floatingActionButton: state is HomeAlumnoLoaded
+                  ? FloatingActionButton.extended(
+                onPressed:       () => context.push(AppRouter.unirseMateria),
+                backgroundColor: AppColors.primaryCoral,
+                foregroundColor: AppColors.baseSurface,
+                icon:            const Icon(Icons.group_add_rounded),
+                label:           const Text('Unirse a materia'),
+              )
+                  : null,
               body: _buildBody(context, state),
             );
           },
@@ -124,6 +134,11 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
         ],
       ),
       actions: [
+        IconButton(
+          icon:  const Icon(Icons.person_outline_rounded),
+          color: AppColors.neutralGrey,
+          onPressed: () => context.push(AppRouter.perfil),
+        ),
         IconButton(
           icon:  const Icon(Icons.logout_rounded),
           color: AppColors.neutralGrey,

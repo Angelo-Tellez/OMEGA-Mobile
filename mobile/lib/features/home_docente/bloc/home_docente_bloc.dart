@@ -2,12 +2,14 @@
 // Company    : OMEGA Solutions (OMEGA)
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : home_docente_bloc.dart
-// Created on : 21/04/2026
-// Created by : Jorge Alejandro Martínez Toris
+// Created on : 24/04/2026
+// Created by : Jorge Alejandro Martinez Toris
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 21/04/2026 - Dev - BLoC home docente con datos mock
+//   [001] 24/04/2026 - Dev - BLoC home docente con datos mock
+//   [002] 24/04/2026 - Dev - Clave generada en memoria, separada del modelo
+//                            de sesion para reflejar que no persiste en BD
 // ============================================================
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,7 +30,7 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
   }
 
   static final _mockInstituciones = [
-    const InstitucionModel(id: 1, docenteId: 1, nombre: 'Tecnologico de Toluca', logo: ''),
+    const InstitucionModel(id: 1, docenteId: 1, nombre: 'Tecnologico de Toluca',  logo: ''),
     const InstitucionModel(id: 2, docenteId: 1, nombre: 'Universidad Autonoma', logo: ''),
   ];
 
@@ -77,7 +79,7 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
 
     emit(current.copyWith(
       institucionActiva: institucion,
-      grupos:            _mockGrupos
+      grupos: _mockGrupos
           .where((g) => g.institucionId == event.institucionId)
           .toList(),
       clearSesion: true,
@@ -94,17 +96,21 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
 
     await Future.delayed(const Duration(milliseconds: 400));
 
-    final clave = _generarClave();
+    // La clave se genera en memoria y nunca se envia a la BD
+    final claveGenerada = _generarClave();
+
     final sesion = SesionModel(
       id:           DateTime.now().millisecondsSinceEpoch,
       grupoId:      event.grupoId,
-      clave:        clave,
       estado:       1,
       fecha:        DateTime.now(),
       horaApertura: DateTime.now(),
     );
 
-    emit(current.copyWith(sesionActiva: sesion));
+    emit(current.copyWith(
+      sesionActiva: sesion,
+      claveActiva:  claveGenerada,
+    ));
   }
 
   Future<void> _onSesionCerrada(
@@ -121,7 +127,7 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
   {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final buffer = StringBuffer();
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final now    = DateTime.now().millisecondsSinceEpoch;
 
     for (int i = 0; i < 6; i++) {
       buffer.write(chars[(now + i * 7) % chars.length]);

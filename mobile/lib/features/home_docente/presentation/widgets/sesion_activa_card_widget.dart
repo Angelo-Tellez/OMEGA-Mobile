@@ -2,12 +2,14 @@
 // Company    : OMEGA Solutions (OMEGA)
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : sesion_activa_card_widget.dart
-// Created on : 21/04/2026
-// Created by : Jorge Alejandro Martínez Toris
+// Created on : 24/04/2026
+// Created by : Jorge Alejandro Martinez Toris
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 21/04/2026 - Dev - Tarjeta de sesion activa con clave y temporizador
+//   [001] 24/04/2026 - Dev - Tarjeta de sesion activa con clave y temporizador
+//   [002] 24/04/2026 - Dev - La clave ahora llega como parametro independiente
+//                            del modelo de sesion
 // ============================================================
 
 import 'dart:async';
@@ -20,11 +22,13 @@ import '../../data/sesion_model.dart';
 class SesionActivaCardWidget extends StatefulWidget
 {
   final SesionModel  sesion;
+  final String       clave;
   final VoidCallback onCerrar;
 
   const SesionActivaCardWidget({
     super.key,
     required this.sesion,
+    required this.clave,
     required this.onCerrar,
   });
 
@@ -34,9 +38,9 @@ class SesionActivaCardWidget extends StatefulWidget
 
 class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
 {
-  late Timer  _timer;
-  late int    _segundos;
-  bool        _pulsante = false;
+  late Timer _timer;
+  late int   _segundos;
+  bool       _pulsante = false;
 
   @override
   void initState()
@@ -79,12 +83,12 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
 
   void _copiarClave()
   {
-    Clipboard.setData(ClipboardData(text: widget.sesion.clave));
+    Clipboard.setData(ClipboardData(text: widget.clave));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Clave copiada al portapapeles'),
+        content:         Text('Clave copiada al portapapeles'),
         backgroundColor: AppColors.darkSlate,
-        duration: Duration(seconds: 2),
+        duration:        Duration(seconds: 2),
       ),
     );
   }
@@ -98,7 +102,7 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
       decoration: BoxDecoration(
         color:        AppColors.baseSurface,
         borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-        border: Border.all(color: AppColors.successGreen, width: 2),
+        border:       Border.all(color: AppColors.successGreen, width: 2),
       ),
       child: Column(
         children: [
@@ -108,7 +112,7 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
           const SizedBox(height: AppSizes.paddingM),
           _buildTimer(context),
           const SizedBox(height: AppSizes.paddingL),
-          _buildCerrarButton(context),
+          _buildCerrarButton(),
         ],
       ),
     );
@@ -153,7 +157,7 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
           ),
           const SizedBox(height: AppSizes.paddingS),
           Text(
-            widget.sesion.clave,
+            widget.clave,
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
               fontSize:      AppSizes.fontKeyDisplay,
               fontWeight:    FontWeight.w700,
@@ -165,11 +169,7 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.copy_rounded,
-                size:  14,
-                color: AppColors.neutralGrey,
-              ),
+              const Icon(Icons.copy_rounded, size: 14, color: AppColors.neutralGrey),
               const SizedBox(width: AppSizes.paddingXS),
               Text(
                 'Toca para copiar',
@@ -190,11 +190,7 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(
-          Icons.schedule_rounded,
-          size:  AppSizes.iconS,
-          color: AppColors.neutralGrey,
-        ),
+        const Icon(Icons.schedule_rounded, size: AppSizes.iconS, color: AppColors.neutralGrey),
         const SizedBox(width: AppSizes.paddingXS),
         Text(
           _tiempoFormateado,
@@ -207,12 +203,12 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
     );
   }
 
-  Widget _buildCerrarButton(BuildContext context)
+  Widget _buildCerrarButton()
   {
     return SizedBox(
       width:  double.infinity,
       height: AppSizes.heightButton,
-      child: ElevatedButton(
+      child:  ElevatedButton(
         onPressed: widget.onCerrar,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.actionRed,
