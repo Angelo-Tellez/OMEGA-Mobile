@@ -4,7 +4,7 @@
 // File       : eliminar_alumno_dialog.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] Dialogo de confirmacion para eliminar alumno

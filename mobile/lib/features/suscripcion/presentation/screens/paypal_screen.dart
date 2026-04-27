@@ -4,7 +4,7 @@
 // File       : paypal_screen.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de pago con PayPal sandbox via WebView

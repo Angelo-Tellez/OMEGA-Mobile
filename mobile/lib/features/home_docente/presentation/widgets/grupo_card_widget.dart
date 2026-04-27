@@ -4,7 +4,7 @@
 // File       : grupo_card_widget.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [002] 27/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de grupo para el home docente

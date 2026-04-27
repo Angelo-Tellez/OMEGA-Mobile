@@ -4,7 +4,7 @@
 // File       : home_docente_screen.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] Se pasa claveActiva al widget de sesion activa
@@ -99,6 +99,12 @@ class _HomeDocenteView extends StatelessWidget
         ],
       ),
       actions: [
+        IconButton(
+          icon:    const Icon(Icons.bar_chart_rounded),
+          color:   AppColors.neutralGrey,
+          tooltip: 'Reportes',
+          onPressed: () => context.push(AppRouter.reportes),
+        ),
         IconButton(
           icon:  const Icon(Icons.person_outline_rounded),
           color: AppColors.neutralGrey,

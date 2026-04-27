@@ -4,7 +4,7 @@
 // File       : alumno_grupo_model.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] Modelo de alumno dentro de un grupo

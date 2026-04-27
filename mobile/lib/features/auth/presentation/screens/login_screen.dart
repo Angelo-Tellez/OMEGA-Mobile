@@ -4,7 +4,7 @@
 // File       : login_screen.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Pantalla de inicio de sesion
@@ -208,18 +208,18 @@ class _LoginScreenState extends State<LoginScreen>
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () {},
+        onPressed: () => context.push(AppRouter.recuperarPassword),
         style: TextButton.styleFrom(
           minimumSize: Size.zero,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.paddingS,
-            vertical: AppSizes.paddingXS,
+            vertical:   AppSizes.paddingXS,
           ),
         ),
         child: Text(
           'Olvide mi contrasena',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.headingDark,
+            color:      AppColors.headingDark,
             fontWeight: FontWeight.w600,
           ),
         ),

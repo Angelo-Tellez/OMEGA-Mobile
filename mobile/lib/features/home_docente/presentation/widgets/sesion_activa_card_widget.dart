@@ -4,7 +4,7 @@
 // File       : sesion_activa_card_widget.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 24/04/2026 - Dev - Tarjeta de sesion activa con clave y temporizador

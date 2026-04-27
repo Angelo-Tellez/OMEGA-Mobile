@@ -4,7 +4,7 @@
 // File       : registro_sesion_model.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Modelo de registro de asistencia en sesion

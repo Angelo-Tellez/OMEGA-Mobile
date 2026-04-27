@@ -4,7 +4,7 @@
 // File       : home_docente_state.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 24/04/2026 - Dev - Estados del BLoC home docente

@@ -4,7 +4,7 @@
 // File       : alumnos_grupo_screen.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] Pantalla de gestion de alumnos por grupo

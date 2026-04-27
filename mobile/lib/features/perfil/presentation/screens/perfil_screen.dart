@@ -4,7 +4,7 @@
 // File       : perfil_screen.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [002] 24/04/2026 - Jorge Alejandro Martinez Toris - Integración con paypal

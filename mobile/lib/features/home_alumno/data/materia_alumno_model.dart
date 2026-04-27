@@ -4,7 +4,7 @@
 // File       : materia_alumno_model.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Modelo de materia con progreso de asistencia para alumno

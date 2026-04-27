@@ -4,7 +4,7 @@
 // File       : register_screen.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martínez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Pantalla de registro de nuevo usuario

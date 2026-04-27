@@ -4,7 +4,7 @@
 // File       : home_alumno_screen.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martínez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Pantalla principal del alumno
@@ -133,6 +133,27 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
         ],
       ),
       actions: [
+        Stack(
+          children: [
+            IconButton(
+              icon:  const Icon(Icons.notifications_outlined),
+              color: AppColors.neutralGrey,
+              onPressed: () => context.push(AppRouter.notificaciones),
+            ),
+            Positioned(
+              right: 8,
+              top:   8,
+              child: Container(
+                width:  10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryCoral,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
         IconButton(
           icon:  const Icon(Icons.person_outline_rounded),
           color: AppColors.neutralGrey,

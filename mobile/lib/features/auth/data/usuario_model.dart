@@ -4,7 +4,7 @@
 // File       : usuario_model.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martínez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Modelo de usuario segun entidad del ER

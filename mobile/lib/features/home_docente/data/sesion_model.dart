@@ -4,7 +4,7 @@
 // File       : sesion_model.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 24/04/2026 - Dev - Modelo de sesion segun entidad del ER

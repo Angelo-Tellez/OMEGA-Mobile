@@ -4,7 +4,7 @@
 // File       : sesion_historial_model.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Modelo de sesion para historial del grupo

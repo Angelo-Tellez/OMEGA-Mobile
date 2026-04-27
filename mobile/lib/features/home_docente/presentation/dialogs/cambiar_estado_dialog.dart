@@ -4,7 +4,7 @@
 // File       : cambiar_estado_dialog.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Dialogo para cambiar estado de asistencia

@@ -4,7 +4,7 @@
 // File       : historial_card_widget.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by:
+// Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de historial de asistencias por materia
