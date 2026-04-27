@@ -7,7 +7,7 @@
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [002] Configuracion inicial de rutas
+//   [002] 21/04/2026 - Jorge Alejandro Martinez Toris - Configuracion inicial de rutas
 // ============================================================
 
 import 'package:go_router/go_router.dart';
@@ -16,6 +16,10 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home_docente/presentation/screens/home_docente_screen.dart';
 import '../../features/home_docente/presentation/screens/agregar_grupo_screen.dart';
 import '../../features/home_docente/presentation/screens/alumnos_grupo_screen.dart';
+import '../../features/home_docente/presentation/screens/historial_sesiones_screen.dart';
+import '../../features/home_docente/presentation/screens/detalle_sesion_screen.dart';
+import '../../features/suscripcion/presentation/screens/suscripcion_screen.dart';
+import '../../features/suscripcion/presentation/screens/paypal_screen.dart';
 import '../../features/home_alumno/presentation/screens/home_alumno_screen.dart';
 import '../../features/home_alumno/presentation/screens/unirse_materia_screen.dart';
 import '../../features/perfil/presentation/screens/perfil_screen.dart';
@@ -24,14 +28,18 @@ class AppRouter
 {
   AppRouter._();
 
-  static const String login          = '/login';
-  static const String register       = '/register';
-  static const String homeDocente    = '/home-docente';
-  static const String agregarGrupo   = '/agregar-grupo';
-  static const String alumnosGrupo   = '/alumnos-grupo';
-  static const String homeAlumno     = '/home-alumno';
-  static const String unirseMateria  = '/unirse-materia';
-  static const String perfil         = '/perfil';
+  static const String login             = '/login';
+  static const String register          = '/register';
+  static const String homeDocente       = '/home-docente';
+  static const String agregarGrupo      = '/agregar-grupo';
+  static const String alumnosGrupo      = '/alumnos-grupo';
+  static const String historialSesiones = '/historial-sesiones';
+  static const String detalleSesion     = '/detalle-sesion';
+  static const String suscripcion       = '/suscripcion';
+  static const String paypal            = '/paypal';
+  static const String homeAlumno        = '/home-alumno';
+  static const String unirseMateria     = '/unirse-materia';
+  static const String perfil            = '/perfil';
 
   static final GoRouter router = GoRouter(
     initialLocation: login,
@@ -58,9 +66,50 @@ class AppRouter
         {
           final args = state.extra as Map<String, dynamic>;
           return AlumnosGrupoScreen(
-            grupoId:      args['grupoId']      as int,
-            nombreGrupo:  args['nombreGrupo']  as String,
+            grupoId:       args['grupoId']       as int,
+            nombreGrupo:   args['nombreGrupo']   as String,
             nombreMateria: args['nombreMateria'] as String,
+          );
+        },
+      ),
+      GoRoute(
+        path:    historialSesiones,
+        builder: (context, state)
+        {
+          final args = state.extra as Map<String, dynamic>;
+          return HistorialSesionesScreen(
+            grupoId:       args['grupoId']       as int,
+            nombreGrupo:   args['nombreGrupo']   as String,
+            nombreMateria: args['nombreMateria'] as String,
+          );
+        },
+      ),
+      GoRoute(
+        path:    detalleSesion,
+        builder: (context, state)
+        {
+          final args = state.extra as Map<String, dynamic>;
+          return DetalleSesionScreen(
+            sesionId:      args['sesionId']      as int,
+            nombreGrupo:   args['nombreGrupo']   as String,
+            nombreMateria: args['nombreMateria'] as String,
+            fecha:         args['fecha']         as String,
+          );
+        },
+      ),
+      GoRoute(
+        path:    suscripcion,
+        builder: (context, state) => const SuscripcionScreen(),
+      ),
+      GoRoute(
+        path:    paypal,
+        builder: (context, state)
+        {
+          final args = state.extra as Map<String, dynamic>;
+          return PaypalScreen(
+            approvalUrl: args['approvalUrl'] as String,
+            planNombre:  args['planNombre']  as String,
+            monto:       args['monto']       as String,
           );
         },
       ),

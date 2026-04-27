@@ -227,9 +227,9 @@ class _UnirseMateriaScreemState extends State<UnirseMateriaScreem>
             ],
           ),
           const SizedBox(height: AppSizes.paddingS),
-          _CodigoInfoWidget(codigo: 'MAT-001', materia: 'Matematicas Discretas'),
-          _CodigoInfoWidget(codigo: 'POO-002', materia: 'Programacion Orientada a Objetos'),
-          _CodigoInfoWidget(codigo: 'BD-003',  materia: 'Bases de Datos'),
+          const _CodigoInfoWidget(codigo: 'MAT-001', materia: 'Matematicas Discretas'),
+          const _CodigoInfoWidget(codigo: 'POO-002', materia: 'Programacion Orientada a Objetos'),
+          const _CodigoInfoWidget(codigo: 'BD-003',  materia: 'Bases de Datos'),
         ],
       ),
     );

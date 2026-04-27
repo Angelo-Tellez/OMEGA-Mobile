@@ -155,7 +155,7 @@ class _AgregarGrupoScreenState extends State<AgregarGrupoScreen>
   {
     return Text(
       titulo,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize:   AppSizes.fontTitle,
         fontWeight: FontWeight.w600,
         color:      AppColors.deepNavy,

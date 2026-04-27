@@ -53,9 +53,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (event.email == 'docente@test.com' && event.password == '123456') {
-      emit(AuthSuccess(usuario: _mockDocente));
+      emit(const AuthSuccess(usuario: _mockDocente));
     } else if (event.email == 'alumno@test.com' && event.password == '123456') {
-      emit(AuthSuccess(usuario: _mockAlumno));
+      emit(const AuthSuccess(usuario: _mockAlumno));
     } else {
       emit(const AuthFailure(mensaje: 'Correo o contrasena incorrectos'));
     }

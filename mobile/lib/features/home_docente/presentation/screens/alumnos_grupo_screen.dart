@@ -171,7 +171,7 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
               Switch(
                 value:          _soloInactivos,
                 onChanged:      (v) => setState(() => _soloInactivos = v),
-                activeColor:    AppColors.primaryCoral,
+                activeThumbColor:    AppColors.primaryCoral,
               ),
               Text(
                 'Mostrar solo inactivos',
@@ -312,7 +312,7 @@ class _AlumnoCardWidget extends StatelessWidget
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
         color: alumno.inactivo
-            ? AppColors.actionRed.withOpacity(0.05)
+            ? AppColors.actionRed.withValues(alpha: 0.05)
             : AppColors.baseSurface,
         borderRadius: BorderRadius.circular(AppSizes.radiusCard),
         border: Border.all(
@@ -337,7 +337,7 @@ class _AlumnoCardWidget extends StatelessWidget
       height: 44,
       decoration: BoxDecoration(
         color: alumno.inactivo
-            ? AppColors.actionRed.withOpacity(0.15)
+            ? AppColors.actionRed.withValues(alpha: 0.15)
             : AppColors.cloudBlue,
         shape: BoxShape.circle,
       ),
@@ -378,7 +378,7 @@ class _AlumnoCardWidget extends StatelessWidget
                   vertical:   AppSizes.paddingXS,
                 ),
                 decoration: BoxDecoration(
-                  color:        AppColors.actionRed.withOpacity(0.1),
+                  color:        AppColors.actionRed.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusInput),
                 ),
                 child: Text(
@@ -424,9 +424,13 @@ class _AlumnoCardWidget extends StatelessWidget
     Color colorBarra;
     final pct = alumno.porcentajeAsistencia;
 
-    if (pct >= 80)       colorBarra = AppColors.successGreen;
-    else if (pct >= 60)  colorBarra = AppColors.warningOrange;
-    else                 colorBarra = AppColors.actionRed;
+    if (pct >= 80) {
+      colorBarra = AppColors.successGreen;
+    } else if (pct >= 60) {
+      colorBarra = AppColors.warningOrange;
+    }else {
+      colorBarra = AppColors.actionRed;
+    }
 
     return Expanded(
       child: ClipRRect(

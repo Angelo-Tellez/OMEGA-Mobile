@@ -7,7 +7,7 @@
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] Pantalla de perfil compartida
+//   [002] 24/04/2026 - Jorge Alejandro Martinez Toris - Integración con paypal
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -40,7 +40,7 @@ class PerfilScreen extends StatelessWidget
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              icon:     const Icon(Icons.arrow_back_ios_new_rounded),
+              icon:      const Icon(Icons.arrow_back_ios_new_rounded),
               onPressed: () => context.pop(),
             ),
             title: const Text('Mi perfil'),
@@ -54,6 +54,10 @@ class PerfilScreen extends StatelessWidget
                 _buildInfoSection(context, state.usuario),
                 const SizedBox(height: AppSizes.paddingL),
                 _buildRolSection(context, state.usuario),
+                if (state.usuario.isDocente) ...[
+                  const SizedBox(height: AppSizes.paddingL),
+                  _buildSuscripcionSection(context),
+                ],
                 const SizedBox(height: AppSizes.paddingXL),
                 _buildLogoutButton(context),
                 const SizedBox(height: AppSizes.paddingL),
@@ -94,7 +98,7 @@ class PerfilScreen extends StatelessWidget
           const SizedBox(height: AppSizes.paddingM),
           Text(
             '${usuario.nombre} ${usuario.apPat} ${usuario.apMat}',
-            style: Theme.of(context).textTheme.headlineMedium,
+            style:     Theme.of(context).textTheme.headlineMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.paddingXS),
@@ -129,29 +133,13 @@ class PerfilScreen extends StatelessWidget
             ),
           ),
           const SizedBox(height: AppSizes.paddingM),
-          _InfoRowWidget(
-            icon:   Icons.badge_outlined,
-            label:  'Nombre',
-            valor:  usuario.nombre,
-          ),
+          _InfoRowWidget(icon: Icons.badge_outlined,  label: 'Nombre',           valor: usuario.nombre),
           const Divider(color: AppColors.surface, height: AppSizes.paddingL),
-          _InfoRowWidget(
-            icon:   Icons.badge_outlined,
-            label:  'Apellido paterno',
-            valor:  usuario.apPat,
-          ),
+          _InfoRowWidget(icon: Icons.badge_outlined,  label: 'Apellido paterno',  valor: usuario.apPat),
           const Divider(color: AppColors.surface, height: AppSizes.paddingL),
-          _InfoRowWidget(
-            icon:   Icons.badge_outlined,
-            label:  'Apellido materno',
-            valor:  usuario.apMat,
-          ),
+          _InfoRowWidget(icon: Icons.badge_outlined,  label: 'Apellido materno',  valor: usuario.apMat),
           const Divider(color: AppColors.surface, height: AppSizes.paddingL),
-          _InfoRowWidget(
-            icon:   Icons.email_outlined,
-            label:  'Correo electronico',
-            valor:  usuario.email,
-          ),
+          _InfoRowWidget(icon: Icons.email_outlined,  label: 'Correo electronico', valor: usuario.email),
         ],
       ),
     );
@@ -206,18 +194,80 @@ class PerfilScreen extends StatelessWidget
     );
   }
 
+  Widget _buildSuscripcionSection(BuildContext context)
+  {
+    // Mock — cuando exista backend esto vendra del estado real del usuario
+    const planNombre  = 'Plan Basico';
+    const _    = true;
+
+    return GestureDetector(
+      onTap: () => context.push(AppRouter.suscripcion),
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color:AppColors.cloudBlue,
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+          border: Border.all(
+            color: AppColors.headingDark,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.headingDark,
+                borderRadius: BorderRadius.circular(AppSizes.radiusInput),
+              ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: AppColors.baseSurface,
+                size:  AppSizes.iconM,
+              ),
+            ),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    planNombre,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color:      AppColors.deepNavy,
+                    ),
+                  ),
+                  Text(
+                    'Toca para mejorar tu plan',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.neutralGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.headingDark,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogoutButton(BuildContext context)
   {
     return SizedBox(
       width:  double.infinity,
       height: AppSizes.heightButton,
-      child: OutlinedButton.icon(
+      child:  OutlinedButton.icon(
         onPressed: ()
         {
           context.read<AuthBloc>().add(const AuthLogoutRequested());
           context.go(AppRouter.login);
         },
-        icon: const Icon(Icons.logout_rounded, color: AppColors.actionRed),
+        icon:  const Icon(Icons.logout_rounded, color: AppColors.actionRed),
         label: const Text('Cerrar sesion'),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.actionRed,

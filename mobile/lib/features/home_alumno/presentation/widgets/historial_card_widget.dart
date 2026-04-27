@@ -3,11 +3,11 @@
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : historial_card_widget.dart
 // Created on : 21/04/2026
-// Created by : Jorge Alejandro Martínez Toris
+// Created by : Jorge Alejandro Martinez Toris
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 21/04/2026 - Dev - Tarjeta de historial de asistencias por materia
+//   [001] 21/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de historial de asistencias por materia
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -94,12 +94,12 @@ class HistorialCardWidget extends StatelessWidget
 
   Widget _buildLeyenda(BuildContext context)
   {
-    return Row(
+    return const Row(
       children: [
-        _LeyendaItemWidget(color: AppColors.successGreen, label: 'Asistencia'),
-        const SizedBox(width: AppSizes.paddingM),
-        _LeyendaItemWidget(color: AppColors.actionRed,    label: 'Falta'),
-        const SizedBox(width: AppSizes.paddingM),
+        _LeyendaItemWidget(color: AppColors.successGreen,  label: 'Asistencia'),
+        SizedBox(width: AppSizes.paddingM),
+        _LeyendaItemWidget(color: AppColors.actionRed,     label: 'Falta'),
+        SizedBox(width: AppSizes.paddingM),
         _LeyendaItemWidget(color: AppColors.warningOrange, label: 'Justificada'),
       ],
     );
@@ -275,15 +275,15 @@ class _HistorialItemWidget extends StatelessWidget
   Color get _color
   {
     if (asistencia.isPresente)    return AppColors.successGreen;
-    if (asistencia.isJustificada) return AppColors.actionRed;
+    if (asistencia.isJustificada) return AppColors.warningOrange;
     return AppColors.actionRed;
   }
 
   Color get _colorFondo
   {
-    if (asistencia.isPresente)    return AppColors.successGreen.withOpacity(0.08);
-    if (asistencia.isJustificada) return AppColors.warningOrange.withOpacity(0.1);
-    return AppColors.actionRed.withOpacity(0.08);
+    if (asistencia.isPresente)    return AppColors.successGreen.withValues(alpha: 0.08);
+    if (asistencia.isJustificada) return AppColors.warningOrange.withValues(alpha: 0.1);
+    return AppColors.actionRed.withValues(alpha: 0.08);
   }
 
   IconData get _icono

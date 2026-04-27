@@ -2,12 +2,12 @@
 // Company    : OMEGA Solutions (OMEGA)
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : grupo_card_widget.dart
-// Created on : 21/04/2026
+// Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] Tarjeta de grupo para el home docente
+//   [002] 27/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de grupo para el home docente
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -49,6 +49,8 @@ class GrupoCardWidget extends StatelessWidget
           _buildCardHeader(context),
           const SizedBox(height: AppSizes.paddingS),
           _buildCardInfo(context),
+          const SizedBox(height: AppSizes.paddingM),
+          _buildAccesosRapidos(context),
           const SizedBox(height: AppSizes.paddingM),
           _buildCardActions(context),
         ],
@@ -93,19 +95,6 @@ class GrupoCardWidget extends StatelessWidget
             ],
           ),
         ),
-        IconButton(
-          icon:    const Icon(Icons.people_outline_rounded),
-          color:   AppColors.headingDark,
-          tooltip: 'Ver alumnos',
-          onPressed: () => context.push(
-            AppRouter.alumnosGrupo,
-            extra: {
-              'grupoId':       grupo.id,
-              'nombreGrupo':   grupo.nombre,
-              'nombreMateria': grupo.materia,
-            },
-          ),
-        ),
       ],
     );
   }
@@ -113,7 +102,7 @@ class GrupoCardWidget extends StatelessWidget
   Widget _buildCardInfo(BuildContext context)
   {
     return Wrap(
-      spacing:  AppSizes.paddingS,
+      spacing:    AppSizes.paddingS,
       runSpacing: AppSizes.paddingXS,
       children: [
         _InfoChipWidget(
@@ -127,6 +116,45 @@ class GrupoCardWidget extends StatelessWidget
         _InfoChipWidget(
           icon:  Icons.vpn_key_outlined,
           label: grupo.codigoInv,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccesosRapidos(BuildContext context)
+  {
+    return Row(
+      children: [
+        Expanded(
+          child: _AccesoRapidoWidget(
+            icon:  Icons.people_outline_rounded,
+            label: 'Alumnos',
+            color: AppColors.headingDark,
+            onTap: () => context.push(
+              AppRouter.alumnosGrupo,
+              extra: {
+                'grupoId':       grupo.id,
+                'nombreGrupo':   grupo.nombre,
+                'nombreMateria': grupo.materia,
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSizes.paddingS),
+        Expanded(
+          child: _AccesoRapidoWidget(
+            icon:  Icons.history_edu_rounded,
+            label: 'Sesiones',
+            color: AppColors.headingDark,
+            onTap: () => context.push(
+              AppRouter.historialSesiones,
+              extra: {
+                'grupoId':       grupo.id,
+                'nombreGrupo':   grupo.nombre,
+                'nombreMateria': grupo.materia,
+              },
+            ),
+          ),
         ),
       ],
     );
@@ -160,6 +188,53 @@ class GrupoCardWidget extends StatelessWidget
         onPressed: onAbrirSesion,
         icon:  const Icon(Icons.play_circle_outline_rounded),
         label: const Text('Abrir sesion'),
+      ),
+    );
+  }
+}
+
+class _AccesoRapidoWidget extends StatelessWidget
+{
+  final IconData     icon;
+  final String       label;
+  final Color        color;
+  final VoidCallback onTap;
+
+  const _AccesoRapidoWidget({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context)
+  {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingM,
+          vertical:   AppSizes.paddingS,
+        ),
+        decoration: BoxDecoration(
+          color:        AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSizes.radiusInput),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: AppSizes.iconS, color: color),
+            const SizedBox(width: AppSizes.paddingXS),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color:      color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

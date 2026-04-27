@@ -24,7 +24,6 @@ import '../../bloc/home_alumno_event.dart';
 import '../../bloc/home_alumno_state.dart';
 import '../widgets/materia_card_widget.dart';
 import '../widgets/historial_card_widget.dart';
-import '../../../../core/config/app_router.dart';
 
 class HomeAlumnoScreen extends StatelessWidget
 {

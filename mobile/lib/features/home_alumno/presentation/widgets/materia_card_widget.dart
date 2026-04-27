@@ -3,11 +3,11 @@
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : materia_card_widget.dart
 // Created on : 21/04/2026
-// Created by : Jorge Alejandro Martínez Toris
+// Created by : Jorge Alejandro Martinez Toris
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 21/04/2026 - Dev - Tarjeta de materia con progreso para el alumno
+//   [001] 21/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de materia con progreso para el alumno
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -103,8 +103,8 @@ class MateriaCardWidget extends StatelessWidget
         Text(
           '${materia.porcentajeAsistencia.toStringAsFixed(0)}%',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontSize: AppSizes.fontH2,
-            color:    _colorPorcentaje,
+            fontSize:   AppSizes.fontH2,
+            color:      _colorPorcentaje,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -139,10 +139,10 @@ class MateriaCardWidget extends StatelessWidget
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
-            value:            materia.porcentajeAsistencia / 100,
-            minHeight:        8,
-            backgroundColor:  AppColors.surface,
-            valueColor: AlwaysStoppedAnimation<Color>(_colorPorcentaje),
+            value:           materia.porcentajeAsistencia / 100,
+            minHeight:       8,
+            backgroundColor: AppColors.surface,
+            valueColor:      AlwaysStoppedAnimation<Color>(_colorPorcentaje),
           ),
         ),
       ],
@@ -154,13 +154,13 @@ class MateriaCardWidget extends StatelessWidget
     return Row(
       children: [
         _RubroChipWidget(
-          label:    'Ordinario ${materia.porcentajeMinOrdinario.toInt()}%',
-          cumple:   materia.cumpleOrdinario,
+          label:  'Ordinario ${materia.porcentajeMinOrdinario.toInt()}%',
+          cumple: materia.cumpleOrdinario,
         ),
         const SizedBox(width: AppSizes.paddingS),
         _RubroChipWidget(
-          label:    'Extraordinario ${materia.porcentajeMinExtraordinario.toInt()}%',
-          cumple:   materia.cumpleExtraordinario,
+          label:  'Extraordinario ${materia.porcentajeMinExtraordinario.toInt()}%',
+          cumple: materia.cumpleExtraordinario,
         ),
       ],
     );
@@ -178,8 +178,8 @@ class MateriaCardWidget extends StatelessWidget
       ),
       decoration: BoxDecoration(
         color: esLimiteExcedido
-            ? AppColors.actionRed.withOpacity(0.1)
-            : AppColors.warningOrange.withOpacity(0.2),
+            ? AppColors.actionRed.withValues(alpha: 0.1)
+            : AppColors.warningOrange.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(AppSizes.radiusInput),
         border: Border.all(
           color: esLimiteExcedido ? AppColors.actionRed : AppColors.warningOrange,
@@ -192,7 +192,7 @@ class MateriaCardWidget extends StatelessWidget
                 ? Icons.error_outline_rounded
                 : Icons.warning_amber_rounded,
             size:  AppSizes.iconS,
-            color: esLimiteExcedido ? AppColors.actionRed : AppColors.actionRed,
+            color: AppColors.actionRed,
           ),
           const SizedBox(width: AppSizes.paddingS),
           Expanded(
@@ -240,8 +240,8 @@ class _RubroChipWidget extends StatelessWidget
       ),
       decoration: BoxDecoration(
         color: cumple
-            ? AppColors.successGreen.withOpacity(0.1)
-            : AppColors.actionRed.withOpacity(0.1),
+            ? AppColors.successGreen.withValues(alpha: 0.1)
+            : AppColors.actionRed.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusInput),
         border: Border.all(
           color: cumple ? AppColors.successGreen : AppColors.actionRed,
