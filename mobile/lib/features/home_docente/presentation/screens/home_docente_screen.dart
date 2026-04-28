@@ -4,11 +4,10 @@
 // File       : home_docente_screen.dart
 // Created on : 21/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] Se pasa claveActiva al widget de sesion activa
-//   en lugar de obtenerla del modelo de sesion y agregar boton flotante.
+//   [003] 28/04/2026 - Jorge Alejandro Martinez Toris - Pantalla principal del docente
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -61,15 +60,9 @@ class _HomeDocenteView extends StatelessWidget
           builder: (context, state)
           {
             return Scaffold(
-              appBar:              _buildAppBar(context, nombreDocente),
-              floatingActionButton: FloatingActionButton.extended(
-                onPressed:       () => context.push(AppRouter.agregarGrupo),
-                backgroundColor: AppColors.primaryCoral,
-                foregroundColor: AppColors.baseSurface,
-                icon:            const Icon(Icons.group_add_rounded),
-                label:           const Text('Nuevo grupo'),
-              ),
-              body: _buildBodyContent(context, state),
+              appBar:               _buildAppBar(context, nombreDocente),
+              floatingActionButton: _buildFAB(context),
+              body:                 _buildBodyContent(context, state),
             );
           },
         );
@@ -119,6 +112,37 @@ class _HomeDocenteView extends StatelessWidget
     );
   }
 
+  Widget _buildFAB(BuildContext context)
+  {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton(
+          heroTag:         'fab_institucion',
+          mini:            true,
+          backgroundColor: AppColors.headingDark,
+          foregroundColor: AppColors.baseSurface,
+          tooltip:         'Agregar institucion',
+          onPressed: () => context.push(
+            AppRouter.agregarInstitucion,
+            extra: {'esOnboarding': false},
+          ),
+          child: const Icon(Icons.add_business_rounded),
+        ),
+        const SizedBox(height: AppSizes.paddingS),
+        FloatingActionButton.extended(
+          heroTag:         'fab_grupo',
+          backgroundColor: AppColors.primaryCoral,
+          foregroundColor: AppColors.baseSurface,
+          icon:            const Icon(Icons.group_add_rounded),
+          label:           const Text('Nuevo grupo'),
+          onPressed: () => context.push(AppRouter.agregarGrupo),
+        ),
+      ],
+    );
+  }
+
   void _onLogout(BuildContext context)
   {
     context.read<AuthBloc>().add(const AuthLogoutRequested());
@@ -159,7 +183,7 @@ class _HomeDocenteView extends StatelessWidget
           AppSizes.paddingM,
           AppSizes.paddingM,
           AppSizes.paddingM,
-          AppSizes.paddingXL + AppSizes.heightButton,
+          AppSizes.paddingXL + AppSizes.heightButton + 60,
         ),
         children: [
           _buildInstitucionesSection(context, state),

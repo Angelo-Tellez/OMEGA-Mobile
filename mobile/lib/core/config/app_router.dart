@@ -7,7 +7,7 @@
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [003] 27/04/2026 - Jorge Alejandro Martinez Toris - Configuracion inicial de rutas
+//   [003] 28/04/2026 - Jorge Alejandro Martinez Toris - Agregación de rutas
 // ============================================================
 
 import 'package:go_router/go_router.dart';
@@ -15,6 +15,8 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/recuperar_password_screen.dart';
 import '../../features/home_docente/presentation/screens/home_docente_screen.dart';
+import '../../features/home_docente/presentation/screens/bienvenida_docente_screen.dart';
+import '../../features/home_docente/presentation/screens/agregar_institucion_screen.dart';
 import '../../features/home_docente/presentation/screens/agregar_grupo_screen.dart';
 import '../../features/home_docente/presentation/screens/alumnos_grupo_screen.dart';
 import '../../features/home_docente/presentation/screens/historial_sesiones_screen.dart';
@@ -36,6 +38,8 @@ class AppRouter
   static const String register           = '/register';
   static const String recuperarPassword  = '/recuperar-password';
   static const String homeDocente        = '/home-docente';
+  static const String bienvenidaDocente  = '/bienvenida-docente';
+  static const String agregarInstitucion = '/agregar-institucion';
   static const String agregarGrupo       = '/agregar-grupo';
   static const String alumnosGrupo       = '/alumnos-grupo';
   static const String historialSesiones  = '/historial-sesiones';
@@ -63,6 +67,20 @@ class AppRouter
       GoRoute(
         path:    recuperarPassword,
         builder: (context, state) => const RecuperarPasswordScreen(),
+      ),
+      GoRoute(
+        path:    bienvenidaDocente,
+        builder: (context, state) => const BienvenidaDocenteScreen(),
+      ),
+      GoRoute(
+        path:    agregarInstitucion,
+        builder: (context, state)
+        {
+          final args = state.extra as Map<String, dynamic>?;
+          return AgregarInstitucionScreen(
+            esOnboarding: args?['esOnboarding'] as bool? ?? false,
+          );
+        },
       ),
       GoRoute(
         path:    homeDocente,

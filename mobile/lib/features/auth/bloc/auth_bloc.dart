@@ -3,11 +3,11 @@
 // Project    : ATN - Sistema de Control de Asistencias
 // File       : auth_bloc.dart
 // Created on : 21/04/2026
-// Created by : Jorge Alejandro Martínez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Created by : Jorge Alejandro Martinez Toris
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 21/04/2026 - Dev - BLoC de autenticacion con datos mock
+//   [002] 28/04/2026 - Jorge Alejandro Martinez Toris - BLoC de autenticacion con datos mock
 // ============================================================
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,13 +24,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
     on<AuthLogoutRequested>(_onLogoutRequested);
   }
 
-  // Usuarios mock para pruebas sin base de datos
   static const _mockDocente = UsuarioModel(
     id:     1,
     nombre: 'Juan',
     apPat:  'Perez',
     apMat:  'Lopez',
     email:  'docente@test.com',
+    rol:    1,
+  );
+
+  static const _mockDocenteNuevo = UsuarioModel(
+    id:     3,
+    nombre: 'Pedro',
+    apPat:  'Sanchez',
+    apMat:  'Ruiz',
+    email:  'docente.nuevo@test.com',
     rol:    1,
   );
 
@@ -54,6 +62,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
 
     if (event.email == 'docente@test.com' && event.password == '123456') {
       emit(const AuthSuccess(usuario: _mockDocente));
+    } else if (event.email == 'docente.nuevo@test.com' && event.password == '123456') {
+      emit(const AuthSuccess(usuario: _mockDocenteNuevo));
     } else if (event.email == 'alumno@test.com' && event.password == '123456') {
       emit(const AuthSuccess(usuario: _mockAlumno));
     } else {
