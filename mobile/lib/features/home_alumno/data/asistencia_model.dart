@@ -34,11 +34,13 @@ class AsistenciaModel
   factory AsistenciaModel.fromJson(Map<String, dynamic> json)
   {
     return AsistenciaModel(
-      id:           json['id']            as int,
-      sesionId:     json['sesion_id']     as int,
-      alumnoId:     json['alumno_id']     as int,
-      estado:       json['estado']        as int,
-      horaRegistro: DateTime.parse(json['hora_registro'] as String),
+      id:           json['id_asistencia']  as int,
+      sesionId:     json['id_sesion']      as int,
+      alumnoId:     json['id_alumno']      as int,
+      estado:       json['est_asistencia'] as int,
+      horaRegistro: json['hora_registro'] != null
+          ? DateTime.parse(json['hora_registro'] as String)
+          : DateTime.now(),
     );
   }
 

@@ -248,7 +248,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
                   size: AppSizes.iconS, color: AppColors.deepNavy),
               const SizedBox(width: AppSizes.paddingXS),
               Text(
-                materia.nombreDocente,
+                materia.nombreDocente ?? 'Sin docente',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.deepNavy, fontWeight: FontWeight.w600,
                 ),
@@ -262,7 +262,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
                   size: AppSizes.iconS, color: AppColors.deepNavy),
               const SizedBox(width: AppSizes.paddingXS),
               Text(
-                materia.horario,
+                materia.horario ?? 'Sin horario',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.deepNavy,
                 ),
@@ -276,7 +276,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
                   size: AppSizes.iconS, color: AppColors.deepNavy),
               const SizedBox(width: AppSizes.paddingXS),
               Text(
-                materia.salon,
+                materia.salon ?? 'Sin salon',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.deepNavy,
                 ),

@@ -25,6 +25,7 @@ class ApiRoutes
   // Usuarios
   static const String perfil           = '/auth/me';
   static const String actualizarPerfil = '/usuarios/perfil';
+  static const String alumnoGrupos = '/alumno/grupos';
 
   // Instituciones
   static const String instituciones     = '/instituciones';
@@ -70,4 +71,6 @@ class ApiRoutes
   static const String notificaciones        = '/notificaciones';
   static String marcarLeida(int id)         => '/notificaciones/$id/leer';
   static const String marcarTodasLeidas     = '/notificaciones/leer-todas';
+
+
 }
