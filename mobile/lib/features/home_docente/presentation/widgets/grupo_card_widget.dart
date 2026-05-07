@@ -111,11 +111,11 @@ class GrupoCardWidget extends StatelessWidget
         ),
         _InfoChipWidget(
           icon:  Icons.calendar_today_outlined,
-          label: grupo.periodo,
+          label: grupo.periodo ?? 'Sin periodo',
         ),
         _InfoChipWidget(
           icon:  Icons.vpn_key_outlined,
-          label: grupo.codigoInv,
+          label: grupo.codigoInv ?? 'Sin codigo',
         ),
       ],
     );

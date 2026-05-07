@@ -7,10 +7,14 @@
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [002] 28/04/2026 - Jorge Alejandro Martinez Toris - BLoC de autenticacion con datos mock
+//   [001] 21/04/2026 - Jorge Alejandro Martinez Toris - BLoC de autenticacion con datos mock
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend Laravel
 // ============================================================
-
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/connection/secure_storage.dart';
+import '../../../../core/constants/api_routes.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../data/usuario_model.dart';
@@ -22,34 +26,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
     on<LoginSubmitted>(_onLoginSubmitted);
     on<RegisterSubmitted>(_onRegisterSubmitted);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthCheckRequested>(_onAuthCheckRequested);
   }
 
-  static const _mockDocente = UsuarioModel(
-    id:     1,
-    nombre: 'Juan',
-    apPat:  'Perez',
-    apMat:  'Lopez',
-    email:  'docente@test.com',
-    rol:    1,
-  );
-
-  static const _mockDocenteNuevo = UsuarioModel(
-    id:     3,
-    nombre: 'Pedro',
-    apPat:  'Sanchez',
-    apMat:  'Ruiz',
-    email:  'docente.nuevo@test.com',
-    rol:    1,
-  );
-
-  static const _mockAlumno = UsuarioModel(
-    id:     2,
-    nombre: 'Maria',
-    apPat:  'Garcia',
-    apMat:  'Torres',
-    email:  'alumno@test.com',
-    rol:    2,
-  );
+  Future<void> _onAuthCheckRequested(
+      AuthCheckRequested event,
+      Emitter<AuthState> emit,
+      ) async
+  {
+    final token = await SecureStorage.obtenerAccessToken();
+    if (token == null) {
+      emit(const AuthInitial());
+      return;
+    }
+    try {
+      ApiClient.setToken(token);
+      final response = await ApiClient.instance.get(ApiRoutes.perfil);
+      final usuario = UsuarioModel.fromJson(
+        response.data['data'] as Map<String, dynamic>,
+      );
+      emit(AuthSuccess(usuario: usuario));
+    } catch (_) {
+      await SecureStorage.limpiarTodo();
+      ApiClient.clearToken();
+      emit(const AuthInitial());
+    }
+  }
 
   Future<void> _onLoginSubmitted(
       LoginSubmitted event,
@@ -57,17 +59,38 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
       ) async
   {
     emit(const AuthLoading());
+    try {
+      final response = await ApiClient.instance.post(
+        ApiRoutes.login,
+        data: {
+          'email':    event.email,
+          'password': event.password,
+        },
+      );
 
-    await Future.delayed(const Duration(milliseconds: 800));
+      final data    = response.data['data'] as Map<String, dynamic>;
+      final token   = data['token']   as String;
+      final usuario = UsuarioModel.fromJson(
+        data['usuario'] as Map<String, dynamic>,
+      );
 
-    if (event.email == 'docente@test.com' && event.password == '123456') {
-      emit(const AuthSuccess(usuario: _mockDocente));
-    } else if (event.email == 'docente.nuevo@test.com' && event.password == '123456') {
-      emit(const AuthSuccess(usuario: _mockDocenteNuevo));
-    } else if (event.email == 'alumno@test.com' && event.password == '123456') {
-      emit(const AuthSuccess(usuario: _mockAlumno));
-    } else {
-      emit(const AuthFailure(mensaje: 'Correo o contrasena incorrectos'));
+      ApiClient.setToken(token);
+      await SecureStorage.guardarTokens(
+        accessToken:  token,
+        refreshToken: token,
+      );
+      await SecureStorage.guardarUsuario(
+        id:  usuario.id,
+        rol: usuario.rol,
+      );
+
+      emit(AuthSuccess(usuario: usuario));
+    } on DioException catch (e) {
+      final mensaje = e.response?.data?['message'] as String?
+          ?? 'Correo o contrasena incorrectos.';
+      emit(AuthFailure(mensaje: mensaje));
+    } catch (e) {
+      emit(const AuthFailure(mensaje: 'Error de conexion. Verifica tu red.'));
     }
   }
 
@@ -77,26 +100,56 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
       ) async
   {
     emit(const AuthLoading());
+    try {
+      final response = await ApiClient.instance.post(
+        ApiRoutes.register,
+        data: {
+          'nombre':   event.nombre,
+          'ap_pat':   event.apPat,
+          'ap_mat':   event.apMat,
+          'email':    event.email,
+          'password': event.password,
+          'rol':      event.rol,
+        },
+      );
 
-    await Future.delayed(const Duration(milliseconds: 800));
+      final data    = response.data['data'] as Map<String, dynamic>;
+      final token   = data['token']   as String;
+      final usuario = UsuarioModel.fromJson(
+        data['usuario'] as Map<String, dynamic>,
+      );
 
-    final nuevoUsuario = UsuarioModel(
-      id:     99,
-      nombre: event.nombre,
-      apPat:  event.apPat,
-      apMat:  event.apMat,
-      email:  event.email,
-      rol:    event.rol,
-    );
 
-    emit(AuthSuccess(usuario: nuevoUsuario));
+      ApiClient.setToken(token);
+      await SecureStorage.guardarTokens(
+        accessToken:  token,
+        refreshToken: token,
+      );
+      await SecureStorage.guardarUsuario(
+        id:  usuario.id,
+        rol: usuario.rol,
+      );
+
+      emit(AuthSuccess(usuario: usuario));
+    } on DioException catch (e) {
+      final mensaje = e.response?.data?['message'] as String?
+          ?? 'Error al registrar. Verifica los datos.';
+      emit(AuthFailure(mensaje: mensaje));
+    } catch (_) {
+      emit(const AuthFailure(mensaje: 'Error de conexion. Verifica tu red.'));
+    }
   }
 
-  void _onLogoutRequested(
+  Future<void> _onLogoutRequested(
       AuthLogoutRequested event,
       Emitter<AuthState> emit,
-      )
+      ) async
   {
+    try {
+      await ApiClient.instance.post(ApiRoutes.logout);
+    } catch (_) {}
+    await SecureStorage.limpiarTodo();
+    ApiClient.clearToken();
     emit(const AuthInitial());
   }
 }

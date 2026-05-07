@@ -17,7 +17,7 @@ class ApiClient
 {
   ApiClient._();
 
-  static const String _baseUrl     = 'https://tu-dominio.com/api';
+  static const String _baseUrl = 'http://192.168.1.81:8000/api';
   static const int    _timeoutMs   = 30000;
 
   static final Dio _dio = Dio(

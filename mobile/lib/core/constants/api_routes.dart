@@ -23,8 +23,8 @@ class ApiRoutes
   static const String refreshToken      = '/auth/refresh';
 
   // Usuarios
-  static const String perfil            = '/usuarios/perfil';
-  static const String actualizarPerfil  = '/usuarios/perfil';
+  static const String perfil           = '/auth/me';
+  static const String actualizarPerfil = '/usuarios/perfil';
 
   // Instituciones
   static const String instituciones     = '/instituciones';

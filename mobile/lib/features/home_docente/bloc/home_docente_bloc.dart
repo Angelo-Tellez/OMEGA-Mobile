@@ -4,15 +4,16 @@
 // File       : home_docente_bloc.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 24/04/2026 - Dev - BLoC home docente con datos mock
-//   [002] 24/04/2026 - Dev - Clave generada en memoria, separada del modelo
-//                            de sesion para reflejar que no persiste en BD
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend
 // ============================================================
-
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 import 'home_docente_event.dart';
 import 'home_docente_state.dart';
 import '../data/institucion_model.dart';
@@ -29,41 +30,45 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
     on<SesionCerrada>(_onSesionCerrada);
   }
 
-  static final _mockInstituciones = [
-    const InstitucionModel(id: 1, docenteId: 1, nombre: 'Tecnologico de Toluca',  logo: ''),
-    const InstitucionModel(id: 2, docenteId: 1, nombre: 'Universidad Autonoma', logo: ''),
-  ];
-
-  static final _mockGrupos = [
-    const GrupoModel(
-      id: 1, institucionId: 1, docenteId: 1,
-      nombre: 'Grupo A', materia: 'Matematicas Discretas',
-      periodo: 'Ene-Jun 2026', noAlumnos: 28, codigoInv: 'MAT-001',
-    ),
-    const GrupoModel(
-      id: 2, institucionId: 1, docenteId: 1,
-      nombre: 'Grupo B', materia: 'Programacion Orientada a Objetos',
-      periodo: 'Ene-Jun 2026', noAlumnos: 32, codigoInv: 'POO-002',
-    ),
-    const GrupoModel(
-      id: 3, institucionId: 1, docenteId: 1,
-      nombre: 'Grupo C', materia: 'Bases de Datos',
-      periodo: 'Ene-Jun 2026', noAlumnos: 25, codigoInv: 'BD-003',
-    ),
-  ];
-
   Future<void> _onStarted(
       HomeDocenteStarted event,
       Emitter<HomeDocenteState> emit,
       ) async
   {
     emit(const HomeDocenteLoading());
-    await Future.delayed(const Duration(milliseconds: 600));
-    emit(HomeDocenteLoaded(
-      instituciones:     _mockInstituciones,
-      institucionActiva: _mockInstituciones.first,
-      grupos:            _mockGrupos,
-    ));
+    try {
+      final response = await ApiClient.instance.get(
+        ApiRoutes.instituciones,
+      );
+
+      final instituciones = (response.data['data'] as List)
+          .map((i) => InstitucionModel.fromJson(i as Map<String, dynamic>))
+          .toList();
+
+      if (instituciones.isEmpty) {
+        emit(const HomeDocenteLoaded(
+          instituciones: [],
+          grupos:        [],
+        ));
+        return;
+      }
+
+      final primera = instituciones.first;
+      final grupos  = await _cargarGrupos(primera.id);
+
+      emit(HomeDocenteLoaded(
+        instituciones:     instituciones,
+        institucionActiva: primera,
+        grupos:            grupos,
+      ));
+    } on DioException catch (e) {
+      emit(HomeDocenteError(
+        mensaje: e.response?.data?['message'] as String?
+            ?? 'Error al cargar los datos.',
+      ));
+    } catch (_) {
+      emit(const HomeDocenteError(mensaje: 'Error de conexion.'));
+    }
   }
 
   Future<void> _onInstitucionSeleccionada(
@@ -77,13 +82,20 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
     final institucion = current.instituciones
         .firstWhere((i) => i.id == event.institucionId);
 
-    emit(current.copyWith(
-      institucionActiva: institucion,
-      grupos: _mockGrupos
-          .where((g) => g.institucionId == event.institucionId)
-          .toList(),
-      clearSesion: true,
-    ));
+    try {
+      final grupos = await _cargarGrupos(event.institucionId);
+      emit(current.copyWith(
+        institucionActiva: institucion,
+        grupos:            grupos,
+        clearSesion:       true,
+      ));
+    } catch (_) {
+      emit(current.copyWith(
+        institucionActiva: institucion,
+        grupos:            [],
+        clearSesion:       true,
+      ));
+    }
   }
 
   Future<void> _onSesionAbierta(
@@ -94,25 +106,31 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
     if (state is! HomeDocenteLoaded) return;
     final current = state as HomeDocenteLoaded;
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final response = await ApiClient.instance.post(
+        ApiRoutes.abrirSesion(event.grupoId),
+      );
 
-    // La clave se genera en memoria y nunca se envia a la BD
-    final claveGenerada = _generarClave();
+      final sesion = SesionModel.fromJson(
+        response.data['data'] as Map<String, dynamic>,
+      );
 
-    final sesion = SesionModel(
-      id:           DateTime.now().millisecondsSinceEpoch,
-      grupoId:      event.grupoId,
-      estado:       1,
-      fecha:        DateTime.now(),
-      horaApertura: DateTime.now(),
-    );
+      final claveGenerada = _generarClave();
 
-    emit(current.copyWith(
-      sesionActiva: sesion,
-      claveActiva:  claveGenerada,
-    ));
+      emit(current.copyWith(
+        sesionActiva: sesion,
+        claveActiva:  claveGenerada,
+      ));
+    } on DioException catch (e) {
+      final mensaje = e.response?.data?['message'] as String?
+          ?? 'No se pudo abrir la sesion.';
+      emit(current.copyWith(sesionActiva: null));
+      emit(HomeDocenteError(mensaje: mensaje));
+      emit(current);
+    } catch (_) {
+      emit(current);
+    }
   }
-
   Future<void> _onSesionCerrada(
       SesionCerrada event,
       Emitter<HomeDocenteState> emit,
@@ -120,15 +138,34 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
   {
     if (state is! HomeDocenteLoaded) return;
     final current = state as HomeDocenteLoaded;
-    emit(current.copyWith(clearSesion: true));
+
+    try {
+      await ApiClient.instance.post(
+        ApiRoutes.cerrarSesion(event.sesionId),
+      );
+      emit(current.copyWith(clearSesion: true));
+    } on DioException catch (_) {
+      emit(current.copyWith(clearSesion: true));
+    } catch (_) {
+      emit(current.copyWith(clearSesion: true));
+    }
+  }
+
+  Future<List<GrupoModel>> _cargarGrupos(int institucionId) async
+  {
+    final response = await ApiClient.instance.get(
+      ApiRoutes.grupos(institucionId),
+    );
+    return (response.data['data'] as List)
+        .map((g) => GrupoModel.fromJson(g as Map<String, dynamic>))
+        .toList();
   }
 
   String _generarClave()
   {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const chars  = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final buffer = StringBuffer();
     final now    = DateTime.now().millisecondsSinceEpoch;
-
     for (int i = 0; i < 6; i++) {
       buffer.write(chars[(now + i * 7) % chars.length]);
     }

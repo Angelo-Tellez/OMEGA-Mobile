@@ -4,21 +4,19 @@
 // File       : sesion_model.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 24/04/2026 - Dev - Modelo de sesion segun entidad del ER
-//   [002] 24/04/2026 - Dev - Se elimina atributo clave del modelo,
-//                            la clave se genera en memoria y no persiste en BD
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Ajuste campos backend real
 // ============================================================
-
 class SesionModel
 {
-  final int      id;
-  final int      grupoId;
-  final int      estado;
-  final DateTime fecha;
-  final DateTime horaApertura;
+  final int       id;
+  final int       grupoId;
+  final int       estado;
+  final DateTime  fecha;
+  final DateTime  horaApertura;
   final DateTime? horaCierre;
 
   const SesionModel({
@@ -35,10 +33,10 @@ class SesionModel
   factory SesionModel.fromJson(Map<String, dynamic> json)
   {
     return SesionModel(
-      id:           json['id']            as int,
-      grupoId:      json['grupo_id']      as int,
-      estado:       json['estado']        as int,
-      fecha:        DateTime.parse(json['fecha']         as String),
+      id:           json['id_sesion']     as int,
+      grupoId:      json['id_grupo']      as int,
+      estado:       json['est_sesion']    as int,
+      fecha:        DateTime.parse(json['fec_sesion']    as String),
       horaApertura: DateTime.parse(json['hora_apertura'] as String),
       horaCierre:   json['hora_cierre'] != null
           ? DateTime.parse(json['hora_cierre'] as String)
@@ -49,10 +47,10 @@ class SesionModel
   Map<String, dynamic> toJson()
   {
     return {
-      'id':            id,
-      'grupo_id':      grupoId,
-      'estado':        estado,
-      'fecha':         fecha.toIso8601String(),
+      'id_sesion':     id,
+      'id_grupo':      grupoId,
+      'est_sesion':    estado,
+      'fec_sesion':    fecha.toIso8601String(),
       'hora_apertura': horaApertura.toIso8601String(),
       'hora_cierre':   horaCierre?.toIso8601String(),
     };

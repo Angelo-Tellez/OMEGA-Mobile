@@ -7,7 +7,7 @@
 // Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Configuracion global de la aplicacion
+//   [001] 7/05/2026 - Jorge Alejandro Martinez Toris - Configuracion de baseurl
 // ============================================================
 
 class AppConfig
@@ -15,7 +15,7 @@ class AppConfig
   AppConfig._();
 
   // Cambia esta URL cuando el backend este listo
-  static const String baseUrl          = 'https://tu-dominio.com/api';
+  static const String baseUrl = 'http://192.168.1.81:8000/api';
 
   // PayPal sandbox — reemplazar con produccion cuando este listo
   static const String paypalClientId   = 'TU_PAYPAL_CLIENT_ID_SANDBOX';
