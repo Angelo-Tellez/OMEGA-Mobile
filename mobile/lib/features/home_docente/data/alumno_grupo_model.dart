@@ -45,14 +45,14 @@ class AlumnoGrupoModel
   factory AlumnoGrupoModel.fromJson(Map<String, dynamic> json)
   {
     return AlumnoGrupoModel(
-      alumnoId:         json['alumno_id']          as int,
-      nombre:           json['nombre']             as String,
-      apPat:            json['ap_pat']             as String,
-      apMat:            json['ap_mat']             as String,
-      email:            json['email']              as String,
-      totalSesiones:    json['total_sesiones']     as int,
+      alumnoId:          json['alumno_id']          as int,
+      nombre:            json['nombre']             as String,
+      apPat:             json['ap_pat']             as String,
+      apMat:             json['ap_mat']             as String? ?? '',
+      email:             json['email']              as String,
+      totalSesiones:     json['total_sesiones']     as int,
       sesionesAsistidas: json['sesiones_asistidas'] as int,
-      fechaInscripcion: json['fecha_inscripcion']  as String,
+      fechaInscripcion:  json['fecha_inscripcion']  as String? ?? '',
     );
   }
 

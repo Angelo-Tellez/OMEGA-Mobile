@@ -4,13 +4,16 @@
 // File       : alumnos_grupo_screen.dart
 // Created on : 24/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] Pantalla de gestion de alumnos por grupo
+//   [001] 24/04/2026 - Dev - Pantalla de gestion de alumnos por grupo
+//   [002] 08/05/2026 - Jorge Alejandro Martinez Toris - Conexion backend real
 // ============================================================
 
 import 'package:flutter/material.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../data/alumno_grupo_model.dart';
@@ -36,46 +39,17 @@ class AlumnosGrupoScreen extends StatefulWidget
 class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
 {
   final _busquedaController = TextEditingController();
-  String _filtro            = '';
-  bool   _soloInactivos     = false;
+  String                 _filtro        = '';
+  bool                   _soloInactivos = false;
+  List<AlumnoGrupoModel> _alumnos       = [];
+  bool                   _cargando      = true;
 
-  final List<AlumnoGrupoModel> _alumnos = [
-    const AlumnoGrupoModel(
-      alumnoId: 1, nombre: 'Maria',   apPat: 'Garcia',    apMat: 'Torres',
-      email: 'maria@test.com',    totalSesiones: 10, sesionesAsistidas: 9,
-      fechaInscripcion: '01/02/2026',
-    ),
-    const AlumnoGrupoModel(
-      alumnoId: 2, nombre: 'Carlos',  apPat: 'Lopez',     apMat: 'Ramos',
-      email: 'carlos@test.com',   totalSesiones: 10, sesionesAsistidas: 7,
-      fechaInscripcion: '01/02/2026',
-    ),
-    const AlumnoGrupoModel(
-      alumnoId: 3, nombre: 'Ana',     apPat: 'Martinez',  apMat: 'Vega',
-      email: 'ana@test.com',      totalSesiones: 10, sesionesAsistidas: 0,
-      fechaInscripcion: '03/02/2026',
-    ),
-    const AlumnoGrupoModel(
-      alumnoId: 4, nombre: 'Luis',    apPat: 'Hernandez', apMat: 'Cruz',
-      email: 'luis@test.com',     totalSesiones: 10, sesionesAsistidas: 10,
-      fechaInscripcion: '01/02/2026',
-    ),
-    const AlumnoGrupoModel(
-      alumnoId: 5, nombre: 'Sofia',   apPat: 'Perez',     apMat: 'Diaz',
-      email: 'sofia@test.com',    totalSesiones: 10, sesionesAsistidas: 0,
-      fechaInscripcion: '05/02/2026',
-    ),
-    const AlumnoGrupoModel(
-      alumnoId: 6, nombre: 'Miguel',  apPat: 'Ramirez',   apMat: 'Flores',
-      email: 'miguel@test.com',   totalSesiones: 10, sesionesAsistidas: 5,
-      fechaInscripcion: '01/02/2026',
-    ),
-    const AlumnoGrupoModel(
-      alumnoId: 7, nombre: 'Valeria', apPat: 'Sanchez',   apMat: 'Morales',
-      email: 'valeria@test.com',  totalSesiones: 10, sesionesAsistidas: 8,
-      fechaInscripcion: '02/02/2026',
-    ),
-  ];
+  @override
+  void initState()
+  {
+    super.initState();
+    _cargarAlumnos();
+  }
 
   @override
   void dispose()
@@ -84,15 +58,31 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
     super.dispose();
   }
 
+  Future<void> _cargarAlumnos() async
+  {
+    setState(() => _cargando = true);
+    try {
+      final response = await ApiClient.instance.get(
+        ApiRoutes.alumnosGrupo(widget.grupoId),
+      );
+      setState(() {
+        _alumnos  = (response.data['data'] as List)
+            .map((a) => AlumnoGrupoModel.fromJson(a as Map<String, dynamic>))
+            .toList();
+        _cargando = false;
+      });
+    } catch (_) {
+      setState(() => _cargando = false);
+    }
+  }
+
   List<AlumnoGrupoModel> get _alumnosFiltrados
   {
     return _alumnos.where((a) {
       final coincideBusqueda = _filtro.isEmpty ||
           a.nombreCompleto.toLowerCase().contains(_filtro.toLowerCase()) ||
           a.email.toLowerCase().contains(_filtro.toLowerCase());
-
       final coincideInactivo = !_soloInactivos || a.inactivo;
-
       return coincideBusqueda && coincideInactivo;
     }).toList();
   }
@@ -105,13 +95,29 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
     );
 
     if (confirmar == true && mounted) {
-      setState(() => _alumnos.removeWhere((a) => a.alumnoId == alumno.alumnoId));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:         Text('${alumno.nombre} fue eliminado del grupo'),
-          backgroundColor: AppColors.darkSlate,
-        ),
-      );
+      try {
+        await ApiClient.instance.delete(
+          ApiRoutes.eliminarAlumno(widget.grupoId, alumno.alumnoId),
+        );
+        setState(() => _alumnos.removeWhere((a) => a.alumnoId == alumno.alumnoId));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:         Text('${alumno.nombre} fue eliminado del grupo'),
+              backgroundColor: AppColors.darkSlate,
+            ),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:         Text('Error al eliminar el alumno'),
+              backgroundColor: AppColors.actionRed,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -156,22 +162,22 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
       child: Column(
         children: [
           TextFormField(
-            controller:   _busquedaController,
-            onChanged:    (v) => setState(() => _filtro = v),
+            controller: _busquedaController,
+            onChanged:  (v) => setState(() => _filtro = v),
             decoration: const InputDecoration(
-              hintText:    'Buscar alumno por nombre o correo',
-              prefixIcon:  Icon(Icons.search_rounded),
-              filled:      true,
-              fillColor:   AppColors.baseSurface,
+              hintText:   'Buscar alumno por nombre o correo',
+              prefixIcon: Icon(Icons.search_rounded),
+              filled:     true,
+              fillColor:  AppColors.baseSurface,
             ),
           ),
           const SizedBox(height: AppSizes.paddingS),
           Row(
             children: [
               Switch(
-                value:          _soloInactivos,
-                onChanged:      (v) => setState(() => _soloInactivos = v),
-                activeThumbColor:    AppColors.primaryCoral,
+                value:           _soloInactivos,
+                onChanged:       (v) => setState(() => _soloInactivos = v),
+                activeThumbColor: AppColors.primaryCoral,
               ),
               Text(
                 'Mostrar solo inactivos',
@@ -191,7 +197,7 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
     final inactivos = _alumnos.where((a) => a.inactivo).length;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+      margin:  const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
         color:        AppColors.cloudBlue,
@@ -199,27 +205,9 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: _alumnos.length.toString(),
-              label: 'Total alumnos',
-              color: AppColors.deepNavy,
-            ),
-          ),
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: (_alumnos.length - inactivos).toString(),
-              label: 'Activos',
-              color: AppColors.successGreen,
-            ),
-          ),
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: inactivos.toString(),
-              label: 'Inactivos',
-              color: AppColors.actionRed,
-            ),
-          ),
+          Expanded(child: _ResumenItemWidget(valor: _alumnos.length.toString(),              label: 'Total alumnos', color: AppColors.deepNavy)),
+          Expanded(child: _ResumenItemWidget(valor: (_alumnos.length - inactivos).toString(), label: 'Activos',       color: AppColors.successGreen)),
+          Expanded(child: _ResumenItemWidget(valor: inactivos.toString(),                     label: 'Inactivos',     color: AppColors.actionRed)),
         ],
       ),
     );
@@ -227,31 +215,37 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
 
   Widget _buildLista(BuildContext context)
   {
+    if (_cargando) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryCoral));
+    }
+
     final lista = _alumnosFiltrados;
 
     if (lista.isEmpty) {
       return Center(
         child: Text(
           'No se encontraron alumnos',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.neutralGrey,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey),
         ),
       );
     }
 
-    return ListView.separated(
-      padding:     const EdgeInsets.all(AppSizes.paddingM),
-      itemCount:   lista.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSizes.paddingS),
-      itemBuilder: (context, index)
-      {
-        final alumno = lista[index];
-        return _AlumnoCardWidget(
-          alumno:    alumno,
-          onEliminar: () => _onEliminarPressed(alumno),
-        );
-      },
+    return RefreshIndicator(
+      color:     AppColors.primaryCoral,
+      onRefresh: _cargarAlumnos,
+      child: ListView.separated(
+        padding:          const EdgeInsets.all(AppSizes.paddingM),
+        itemCount:        lista.length,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSizes.paddingS),
+        itemBuilder: (context, index)
+        {
+          final alumno = lista[index];
+          return _AlumnoCardWidget(
+            alumno:     alumno,
+            onEliminar: () => _onEliminarPressed(alumno),
+          );
+        },
+      ),
     );
   }
 }
@@ -262,31 +256,15 @@ class _ResumenItemWidget extends StatelessWidget
   final String label;
   final Color  color;
 
-  const _ResumenItemWidget({
-    required this.valor,
-    required this.label,
-    required this.color,
-  });
+  const _ResumenItemWidget({required this.valor, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context)
   {
     return Column(
       children: [
-        Text(
-          valor,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color:      color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color:    AppColors.neutralGrey,
-            fontSize: AppSizes.fontCaption,
-          ),
-        ),
+        Text(valor, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: color, fontWeight: FontWeight.w700)),
+        Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey, fontSize: AppSizes.fontCaption)),
       ],
     );
   }
@@ -297,27 +275,19 @@ class _AlumnoCardWidget extends StatelessWidget
   final AlumnoGrupoModel alumno;
   final VoidCallback     onEliminar;
 
-  const _AlumnoCardWidget({
-    required this.alumno,
-    required this.onEliminar,
-  });
+  const _AlumnoCardWidget({required this.alumno, required this.onEliminar});
 
   @override
   Widget build(BuildContext context)
   {
-    final iniciales =
-    '${alumno.nombre[0]}${alumno.apPat[0]}'.toUpperCase();
+    final iniciales = '${alumno.nombre[0]}${alumno.apPat[0]}'.toUpperCase();
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
-        color: alumno.inactivo
-            ? AppColors.actionRed.withValues(alpha: 0.05)
-            : AppColors.baseSurface,
+        color: alumno.inactivo ? AppColors.actionRed.withValues(alpha: 0.05) : AppColors.baseSurface,
         borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-        border: Border.all(
-          color: alumno.inactivo ? AppColors.actionRed : AppColors.surface,
-        ),
+        border: Border.all(color: alumno.inactivo ? AppColors.actionRed : AppColors.surface),
       ),
       child: Row(
         children: [
@@ -336,9 +306,7 @@ class _AlumnoCardWidget extends StatelessWidget
       width:  44,
       height: 44,
       decoration: BoxDecoration(
-        color: alumno.inactivo
-            ? AppColors.actionRed.withValues(alpha: 0.15)
-            : AppColors.cloudBlue,
+        color: alumno.inactivo ? AppColors.actionRed.withValues(alpha: 0.15) : AppColors.cloudBlue,
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -346,9 +314,7 @@ class _AlumnoCardWidget extends StatelessWidget
           iniciales,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color:      alumno.inactivo
-                ? AppColors.actionRed
-                : AppColors.deepNavy,
+            color:      alumno.inactivo ? AppColors.actionRed : AppColors.deepNavy,
           ),
         ),
       ),
@@ -365,29 +331,19 @@ class _AlumnoCardWidget extends StatelessWidget
             Expanded(
               child: Text(
                 alumno.nombreCompleto,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color:      AppColors.deepNavy,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppColors.deepNavy),
               ),
             ),
             if (alumno.inactivo)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingS,
-                  vertical:   AppSizes.paddingXS,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingS, vertical: AppSizes.paddingXS),
                 decoration: BoxDecoration(
                   color:        AppColors.actionRed.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSizes.radiusInput),
                 ),
                 child: Text(
                   'Inactivo',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize:   AppSizes.fontCaption,
-                    color:      AppColors.actionRed,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: AppSizes.fontCaption, color: AppColors.actionRed, fontWeight: FontWeight.w600),
                 ),
               ),
           ],
@@ -395,10 +351,7 @@ class _AlumnoCardWidget extends StatelessWidget
         const SizedBox(height: AppSizes.paddingXS),
         Text(
           alumno.email,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color:    AppColors.neutralGrey,
-            fontSize: AppSizes.fontCaption,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey, fontSize: AppSizes.fontCaption),
         ),
         const SizedBox(height: AppSizes.paddingXS),
         Row(
@@ -407,11 +360,7 @@ class _AlumnoCardWidget extends StatelessWidget
             const SizedBox(width: AppSizes.paddingS),
             Text(
               '${alumno.sesionesAsistidas}/${alumno.totalSesiones}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize:   AppSizes.fontCaption,
-                color:      AppColors.neutralGrey,
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: AppSizes.fontCaption, color: AppColors.neutralGrey, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -421,16 +370,8 @@ class _AlumnoCardWidget extends StatelessWidget
 
   Widget _buildProgresoBarra(BuildContext context)
   {
-    Color colorBarra;
     final pct = alumno.porcentajeAsistencia;
-
-    if (pct >= 80) {
-      colorBarra = AppColors.successGreen;
-    } else if (pct >= 60) {
-      colorBarra = AppColors.warningOrange;
-    }else {
-      colorBarra = AppColors.actionRed;
-    }
+    final colorBarra = pct >= 80 ? AppColors.successGreen : pct >= 60 ? AppColors.warningOrange : AppColors.actionRed;
 
     return Expanded(
       child: ClipRRect(
@@ -448,10 +389,10 @@ class _AlumnoCardWidget extends StatelessWidget
   Widget _buildAcciones(BuildContext context)
   {
     return IconButton(
-      icon:  const Icon(Icons.person_remove_outlined),
-      color: AppColors.actionRed,
+      icon:      const Icon(Icons.person_remove_outlined),
+      color:     AppColors.actionRed,
       onPressed: onEliminar,
-      tooltip: 'Eliminar del grupo',
+      tooltip:   'Eliminar del grupo',
     );
   }
 }
