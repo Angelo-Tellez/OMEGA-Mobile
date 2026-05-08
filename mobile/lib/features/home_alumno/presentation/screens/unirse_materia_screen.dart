@@ -7,10 +7,13 @@
 // Reviewed by: Ximena Becerril Olivares
 // ------------------------------------------------------------
 // Changelog:
-//   [001] Pantalla para unirse a materia por codigo
+//   [001] 24/04/2026 - Dev - Pantalla para unirse a materia por codigo
+//   [002] 08/05/2026 - Jorge Alejandro Martinez Toris - Conexion backend real
 // ============================================================
 
 import 'package:flutter/material.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 
@@ -41,23 +44,27 @@ class _UnirseMateriaScreemState extends State<UnirseMateriaScreem>
 
     setState(() => _cargando = true);
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final codigo   = _codigoController.text.trim().toUpperCase();
+      final response = await ApiClient.instance.post(
+        ApiRoutes.alumnoUnirse,
+        data: {'codigo': codigo},
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
+      setState(() => _cargando = false);
 
-    setState(() => _cargando = false);
-
-    final codigo = _codigoController.text.trim().toUpperCase();
-
-    if (codigo == 'MAT-001' || codigo == 'POO-002' || codigo == 'BD-003') {
+      final grupo = response.data['data'];
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:         Text('Te uniste a la materia correctamente'),
+        SnackBar(
+          content:         Text('Te uniste a ${grupo['materia']} correctamente'),
           backgroundColor: AppColors.successGreen,
         ),
       );
       _codigoController.clear();
-    } else {
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cargando = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:         Text('Codigo invalido o grupo no encontrado'),
@@ -92,8 +99,6 @@ class _UnirseMateriaScreemState extends State<UnirseMateriaScreem>
                 _buildCodigoSection(context),
                 const SizedBox(height: AppSizes.paddingXL),
                 _buildBotonUnirse(context),
-                const SizedBox(height: AppSizes.paddingL),
-                _buildInfoCodigos(context),
               ],
             ),
           ),
@@ -157,7 +162,7 @@ class _UnirseMateriaScreemState extends State<UnirseMateriaScreem>
             color:         AppColors.deepNavy,
           ),
           decoration: const InputDecoration(
-            hintText:   'Ej. MAT-001',
+            hintText:   'Ej. MOV-001-A',
             prefixIcon: Icon(Icons.vpn_key_outlined),
           ),
           validator: (value)
@@ -193,92 +198,6 @@ class _UnirseMateriaScreemState extends State<UnirseMateriaScreem>
         )
             : const Icon(Icons.check_rounded),
         label: Text(_cargando ? 'Verificando...' : 'Unirme al grupo'),
-      ),
-    );
-  }
-
-  Widget _buildInfoCodigos(BuildContext context)
-  {
-    return Container(
-      width:   double.infinity,
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      decoration: BoxDecoration(
-        color:        AppColors.cloudBlue,
-        borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size:  AppSizes.iconS,
-                color: AppColors.deepNavy,
-              ),
-              const SizedBox(width: AppSizes.paddingS),
-              Text(
-                'Codigos de prueba disponibles',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color:      AppColors.deepNavy,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.paddingS),
-          const _CodigoInfoWidget(codigo: 'MAT-001', materia: 'Matematicas Discretas'),
-          const _CodigoInfoWidget(codigo: 'POO-002', materia: 'Programacion Orientada a Objetos'),
-          const _CodigoInfoWidget(codigo: 'BD-003',  materia: 'Bases de Datos'),
-        ],
-      ),
-    );
-  }
-}
-
-class _CodigoInfoWidget extends StatelessWidget
-{
-  final String codigo;
-  final String materia;
-
-  const _CodigoInfoWidget({required this.codigo, required this.materia});
-
-  @override
-  Widget build(BuildContext context)
-  {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSizes.paddingXS),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingS,
-              vertical:   AppSizes.paddingXS,
-            ),
-            decoration: BoxDecoration(
-              color:        AppColors.baseSurface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusInput),
-            ),
-            child: Text(
-              codigo,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color:      AppColors.deepNavy,
-                fontSize:   AppSizes.fontCaption,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSizes.paddingS),
-          Expanded(
-            child: Text(
-              materia,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color:    AppColors.deepNavy,
-                fontSize: AppSizes.fontCaption,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

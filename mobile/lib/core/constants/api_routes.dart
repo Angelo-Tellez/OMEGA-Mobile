@@ -68,4 +68,6 @@ class ApiRoutes
   static const String notificaciones    = '/notificaciones';
   static String marcarLeida(int id)     => '/notificaciones/$id/leer';
   static const String marcarTodasLeidas = '/notificaciones/leer-todas';
+
+  static const String alumnoUnirse = '/grupos/unirse';
 }
