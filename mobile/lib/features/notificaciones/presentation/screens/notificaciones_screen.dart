@@ -8,12 +8,15 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de notificaciones del alumno
+//   [002] 08/05/2026 - Jorge Alejandro Martinez Toris - Notificaciones reales desde grupos
 // ============================================================
 
 import 'package:flutter/material.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../data/notificacion_model.dart';
+import '../../../home_alumno/data/materia_alumno_model.dart';
 
 class NotificacionesScreen extends StatefulWidget
 {
@@ -25,74 +28,76 @@ class NotificacionesScreen extends StatefulWidget
 
 class _NotificacionesScreenState extends State<NotificacionesScreen>
 {
-  late List<NotificacionModel> _notificaciones;
+  List<_Notif> _notificaciones = [];
+  bool         _cargando       = true;
+  final Set<int> _leidas       = {};
 
   @override
   void initState()
   {
     super.initState();
-    _notificaciones = [
-      const NotificacionModel(
-        id: 1, tipo: 1,
-        titulo:  'Clase en 10 minutos',
-        mensaje: 'Matematicas Discretas con Juan Perez Lopez comenzara a las 10:00 en Aula 301.',
-        fecha: 'Hoy', hora: '09:50', leida: false,
-      ),
-      const NotificacionModel(
-        id: 2, tipo: 3,
-        titulo:  'Riesgo de faltas',
-        mensaje: 'Te quedan solo 2 faltas permitidas en Bases de Datos para conservar el derecho a Ordinario.',
-        fecha: 'Hoy', hora: '08:00', leida: false,
-      ),
-      const NotificacionModel(
-        id: 3, tipo: 2,
-        titulo:  'Falta registrada',
-        mensaje: 'Se registro tu inasistencia en la sesion de Bases de Datos del 25/04/2026.',
-        fecha: 'Ayer', hora: '11:30', leida: true,
-      ),
-      const NotificacionModel(
-        id: 4, tipo: 4,
-        titulo:  'Limite de faltas excedido',
-        mensaje: 'Has excedido el limite de faltas en Bases de Datos. Ya no tienes derecho a Ordinario.',
-        fecha: 'Ayer', hora: '10:00', leida: true,
-      ),
-      const NotificacionModel(
-        id: 5, tipo: 1,
-        titulo:  'Clase en 10 minutos',
-        mensaje: 'Programacion Orientada a Objetos con Juan Perez Lopez comenzara a las 08:00 en Lab 102.',
-        fecha: '25/04/2026', hora: '07:50', leida: true,
-      ),
-      const NotificacionModel(
-        id: 6, tipo: 2,
-        titulo:  'Falta registrada',
-        mensaje: 'Se registro tu inasistencia en la sesion de Matematicas Discretas del 23/04/2026.',
-        fecha: '23/04/2026', hora: '10:45', leida: true,
-      ),
-    ];
+    _cargar();
   }
 
-  int get _noLeidas => _notificaciones.where((n) => !n.leida).length;
-
-  void _marcarTodasLeidas()
+  Future<void> _cargar() async
   {
-    setState(()
-    {
-      _notificaciones = _notificaciones
-          .map((n) => n.copyWith(leida: true))
+    setState(() => _cargando = true);
+    try {
+      final res = await ApiClient.instance.get(ApiRoutes.alumnoGrupos);
+      final materias = (res.data['data'] as List)
+          .map((m) => MateriaAlumnoModel.fromJson(m as Map<String, dynamic>))
           .toList();
-    });
+
+      final lista = <_Notif>[];
+
+      for (final m in materias) {
+        // Sesion activa
+        if (m.tieneSesionActiva) {
+          lista.add(_Notif(
+            tipo:    1,
+            titulo:  'Sesion activa — ${m.materia}',
+            mensaje: 'El docente ha abierto una sesion en ${m.nombreGrupo}. Ingresa tu clave de asistencia.',
+          ));
+        }
+
+        // Limite de faltas excedido
+        if (m.limiteExcedido) {
+          lista.add(_Notif(
+            tipo:    4,
+            titulo:  'Limite excedido — ${m.materia}',
+            mensaje: 'Has superado el limite de faltas en ${m.nombreGrupo}. Ya no tienes derecho a ordinario.',
+          ));
+        }
+        // En riesgo
+        else if (m.enRiesgo) {
+          lista.add(_Notif(
+            tipo:    3,
+            titulo:  'Riesgo de faltas — ${m.materia}',
+            mensaje: 'Te quedan solo ${m.faltasPermitidas} falta(s) permitida(s) en ${m.nombreGrupo}.',
+          ));
+        }
+
+        // Faltas acumuladas
+        if (m.sesionesFalta > 0) {
+          lista.add(_Notif(
+            tipo:    2,
+            titulo:  'Faltas acumuladas — ${m.materia}',
+            mensaje: 'Tienes ${m.sesionesFalta} falta(s) registrada(s) en ${m.nombreGrupo}. Asistencia: ${m.porcentajeAsistencia.toStringAsFixed(0)}%.',
+          ));
+        }
+      }
+
+      setState(() { _notificaciones = lista; _cargando = false; });
+    } catch (_) {
+      setState(() => _cargando = false);
+    }
   }
 
-  void _marcarLeida(int id)
-  {
-    setState(()
-    {
-      final index = _notificaciones.indexWhere((n) => n.id == id);
-      if (index != -1) {
-        _notificaciones[index] = _notificaciones[index].copyWith(leida: true);
-      }
-    });
-  }
+  int get _noLeidas => _notificaciones
+      .asMap()
+      .entries
+      .where((e) => !_leidas.contains(e.key))
+      .length;
 
   @override
   Widget build(BuildContext context)
@@ -129,228 +134,167 @@ class _NotificacionesScreenState extends State<NotificacionesScreen>
             ],
           ],
         ),
+        actions: [
+          if (_noLeidas > 0)
+            SizedBox(
+              width: 110,
+              child: TextButton(
+                onPressed: () => setState(() => _leidas.addAll(
+                  List.generate(_notificaciones.length, (i) => i),
+                )),
+                child: const Text(
+                  'Marcar todas',
+                  style: TextStyle(color: AppColors.primaryCoral),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+        ],
       ),
       body: SafeArea(
-        child: _notificaciones.isEmpty
-            ? _buildVacio(context)
-            : _buildContenido(context),
+        child: _cargando
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryCoral))
+            : RefreshIndicator(
+          color:     AppColors.primaryCoral,
+          onRefresh: _cargar,
+          child: _notificaciones.isEmpty
+              ? _buildVacio()
+              : _buildLista(),
+        ),
       ),
     );
   }
 
-  Widget _buildContenido(BuildContext context)
+  Widget _buildVacio()
   {
-    return Column(
+    return ListView(
       children: [
-        if (_noLeidas > 0)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.paddingM,
-              AppSizes.paddingS,
-              AppSizes.paddingM,
-              0,
-            ),
-            child: SizedBox(
-              width:  double.infinity,
-              height: AppSizes.heightButton,
-              child:  OutlinedButton.icon(
-                onPressed: _marcarTodasLeidas,
-                icon:  const Icon(Icons.done_all_rounded),
-                label: const Text('Marcar todas como leidas'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.headingDark,
-                  side: const BorderSide(color: AppColors.headingDark),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusButton),
-                  ),
-                ),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+        Column(
+          children: [
+            const Icon(Icons.notifications_none_rounded, size: 64, color: AppColors.surface),
+            const SizedBox(height: AppSizes.paddingM),
+            Text(
+              'Sin notificaciones',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontSize: AppSizes.fontTitle, color: AppColors.neutralGrey,
               ),
             ),
-          ),
-        Expanded(child: _buildLista(context)),
+            const SizedBox(height: AppSizes.paddingS),
+            Text(
+              'Aqui apareceran tus alertas de clase y asistencia.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildVacio(BuildContext context)
+  Widget _buildLista()
   {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.notifications_none_rounded,
-            size:  64,
-            color: AppColors.surface,
-          ),
-          const SizedBox(height: AppSizes.paddingM),
-          Text(
-            'Sin notificaciones',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontSize: AppSizes.fontTitle,
-              color:    AppColors.neutralGrey,
+    return ListView.separated(
+      padding:         const EdgeInsets.all(AppSizes.paddingM),
+      itemCount:       _notificaciones.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSizes.paddingS),
+      itemBuilder: (context, index) {
+        final n      = _notificaciones[index];
+        final leida  = _leidas.contains(index);
+        final color  = _colorTipo(n.tipo);
+        final icono  = _iconoTipo(n.tipo);
+
+        return GestureDetector(
+          onTap: () => setState(() => _leidas.add(index)),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding:  const EdgeInsets.all(AppSizes.paddingM),
+            decoration: BoxDecoration(
+              color: leida ? AppColors.baseSurface : color.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+              border: Border.all(
+                color: leida ? AppColors.surface : color.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    color:        color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusInput),
+                  ),
+                  child: Icon(icono, size: AppSizes.iconM, color: color),
+                ),
+                const SizedBox(width: AppSizes.paddingM),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              n.titulo,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600, color: AppColors.deepNavy,
+                              ),
+                            ),
+                          ),
+                          if (!leida)
+                            Container(
+                              width: 8, height: 8,
+                              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.paddingXS),
+                      Text(
+                        n.mensaje,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.neutralGrey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSizes.paddingS),
-          Text(
-            'Aqui apareceran tus alertas de clase y asistencia.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.neutralGrey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildLista(BuildContext context)
+  Color _colorTipo(int tipo)
   {
-    final Map<String, List<NotificacionModel>> agrupadas = {};
-
-    for (final n in _notificaciones) {
-      agrupadas.putIfAbsent(n.fecha, () => []).add(n);
+    switch (tipo) {
+      case 1:  return AppColors.electricBlue;
+      case 2:  return AppColors.warningOrange;
+      case 3:  return AppColors.actionRed;
+      case 4:  return AppColors.actionRed;
+      default: return AppColors.headingDark;
     }
+  }
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      children: agrupadas.entries.map((entry) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
-              child: Text(
-                entry.key,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color:      AppColors.neutralGrey,
-                  fontSize:   AppSizes.fontCaption,
-                ),
-              ),
-            ),
-            ...entry.value.map((n) => _NotificacionCardWidget(
-              notificacion: n,
-              onTap:        () => _marcarLeida(n.id),
-            )),
-          ],
-        );
-      }).toList(),
-    );
+  IconData _iconoTipo(int tipo)
+  {
+    switch (tipo) {
+      case 1:  return Icons.notifications_active_rounded;
+      case 2:  return Icons.event_busy_rounded;
+      case 3:  return Icons.warning_amber_rounded;
+      case 4:  return Icons.error_outline_rounded;
+      default: return Icons.notifications_rounded;
+    }
   }
 }
 
-class _NotificacionCardWidget extends StatelessWidget
+class _Notif
 {
-  final NotificacionModel notificacion;
-  final VoidCallback      onTap;
+  final int    tipo;
+  final String titulo;
+  final String mensaje;
 
-  const _NotificacionCardWidget({
-    required this.notificacion,
-    required this.onTap,
-  });
-
-  Color get _colorTipo
-  {
-    if (notificacion.isInicioClase)    return AppColors.electricBlue;
-    if (notificacion.isInasistencia)   return AppColors.warningOrange;
-    if (notificacion.isRiesgoFaltas)   return AppColors.actionRed;
-    if (notificacion.isLimiteExcedido) return AppColors.actionRed;
-    return AppColors.headingDark;
-  }
-
-  IconData get _iconoTipo
-  {
-    if (notificacion.isInicioClase)    return Icons.notifications_active_rounded;
-    if (notificacion.isInasistencia)   return Icons.event_busy_rounded;
-    if (notificacion.isRiesgoFaltas)   return Icons.warning_amber_rounded;
-    if (notificacion.isLimiteExcedido) return Icons.error_outline_rounded;
-    return Icons.notifications_rounded;
-  }
-
-  @override
-  Widget build(BuildContext context)
-  {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin:   const EdgeInsets.only(bottom: AppSizes.paddingS),
-        padding:  const EdgeInsets.all(AppSizes.paddingM),
-        decoration: BoxDecoration(
-          color: notificacion.leida
-              ? AppColors.baseSurface
-              : _colorTipo.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-          border: Border.all(
-            color: notificacion.leida
-                ? AppColors.surface
-                : _colorTipo.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSizes.paddingS),
-              decoration: BoxDecoration(
-                color:        _colorTipo.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusInput),
-              ),
-              child: Icon(
-                _iconoTipo,
-                size:  AppSizes.iconM,
-                color: _colorTipo,
-              ),
-            ),
-            const SizedBox(width: AppSizes.paddingM),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          notificacion.titulo,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color:      AppColors.deepNavy,
-                          ),
-                        ),
-                      ),
-                      if (!notificacion.leida)
-                        Container(
-                          width:  8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _colorTipo,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.paddingXS),
-                  Text(
-                    notificacion.mensaje,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.neutralGrey,
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.paddingXS),
-                  Text(
-                    notificacion.hora,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: AppSizes.fontCaption,
-                      color:    AppColors.neutralGrey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  const _Notif({required this.tipo, required this.titulo, required this.mensaje});
 }

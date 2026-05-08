@@ -8,8 +8,11 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Pantalla principal del alumno
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Fix: clave solo visible con sesion activa
+//   [003] 08/05/2026 - Jorge Alejandro Martinez Toris - Polling 30s + aviso sesion activa
 // ============================================================
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -33,8 +36,7 @@ class HomeAlumnoScreen extends StatelessWidget
   Widget build(BuildContext context)
   {
     return BlocProvider(
-      create: (_) => HomeAlumnoBloc()
-        ..add(const HomeAlumnoStarted(alumnoId: 2)),
+      create: (_) => HomeAlumnoBloc()..add(const HomeAlumnoStarted()),
       child: const _HomeAlumnoView(),
     );
   }
@@ -51,10 +53,30 @@ class _HomeAlumnoView extends StatefulWidget
 class _HomeAlumnoViewState extends State<_HomeAlumnoView>
 {
   final _claveController = TextEditingController();
+  Timer?   _pollingTimer;
+  Set<int> _gruposConSesionActiva = {};
+
+  @override
+  void initState()
+  {
+    super.initState();
+    _startPolling();
+  }
+
+  void _startPolling()
+  {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_)
+    {
+      if (mounted) {
+        context.read<HomeAlumnoBloc>().add(const HomeAlumnoStarted());
+      }
+    });
+  }
 
   @override
   void dispose()
   {
+    _pollingTimer?.cancel();
     _claveController.dispose();
     super.dispose();
   }
@@ -65,6 +87,27 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
     return BlocConsumer<HomeAlumnoBloc, HomeAlumnoState>(
       listener: (context, state)
       {
+        if (state is HomeAlumnoLoaded) {
+          final nuevasActivas = state.materias
+              .where((m) => m.tieneSesionActiva)
+              .map((m) => m.grupoId)
+              .toSet();
+
+          final hayNuevas = nuevasActivas.difference(_gruposConSesionActiva).isNotEmpty;
+
+          if (hayNuevas && _gruposConSesionActiva.isNotEmpty) {
+            final materia = state.materias.firstWhere((m) => m.tieneSesionActiva);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content:         Text('¡Sesion activa en ${materia.materia}! Ingresa tu clave.'),
+                backgroundColor: AppColors.electricBlue,
+                duration:        const Duration(seconds: 4),
+              ),
+            );
+          }
+          _gruposConSesionActiva = nuevasActivas;
+        }
+
         if (state is HomeAlumnoRegistroExitoso) {
           _claveController.clear();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -74,6 +117,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
             ),
           );
         }
+
         if (state is HomeAlumnoError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -93,7 +137,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
                 : 'Alumno';
 
             return Scaffold(
-              appBar: _buildAppBar(context, nombreAlumno),
+              appBar: _buildAppBar(context, nombreAlumno, state),
               floatingActionButton: state is HomeAlumnoLoaded
                   ? FloatingActionButton.extended(
                 onPressed:       () => context.push(AppRouter.unirseMateria),
@@ -111,8 +155,12 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, String nombreAlumno)
+  AppBar _buildAppBar(BuildContext context, String nombreAlumno, HomeAlumnoState state)
   {
+    // Mostrar punto rojo en notificaciones solo si hay sesion activa o riesgo
+    final hayAlertas = state is HomeAlumnoLoaded &&
+        state.materias.any((m) => m.tieneSesionActiva || m.enRiesgo || m.limiteExcedido);
+
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,18 +188,19 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
               color: AppColors.neutralGrey,
               onPressed: () => context.push(AppRouter.notificaciones),
             ),
-            Positioned(
-              right: 8,
-              top:   8,
-              child: Container(
-                width:  10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryCoral,
-                  shape: BoxShape.circle,
+            if (hayAlertas)
+              Positioned(
+                right: 8,
+                top:   8,
+                child: Container(
+                  width:  10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryCoral,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         IconButton(
@@ -185,15 +234,15 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
         color:     AppColors.primaryCoral,
         onRefresh: () async
         {
-          context.read<HomeAlumnoBloc>().add(
-            const HomeAlumnoStarted(alumnoId: 2),
-          );
+          context.read<HomeAlumnoBloc>().add(const HomeAlumnoStarted());
         },
         child: ListView(
           padding: const EdgeInsets.all(AppSizes.paddingM),
           children: [
-            _buildRegistroSection(context, state),
-            const SizedBox(height: AppSizes.paddingL),
+            if (state.materiaActiva != null && state.materiaActiva!.tieneSesionActiva) ...[
+              _buildRegistroSection(context, state),
+              const SizedBox(height: AppSizes.paddingL),
+            ],
             _buildMateriasSection(context, state),
             const SizedBox(height: AppSizes.paddingL),
             if (state.materiaActiva != null)
@@ -229,8 +278,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
 
   Widget _buildInfoClaseActiva(BuildContext context, HomeAlumnoLoaded state)
   {
-    final materia = state.materiaActiva;
-    if (materia == null) return const SizedBox.shrink();
+    final materia = state.materiaActiva!;
 
     return Container(
       width:   double.infinity,
@@ -244,13 +292,29 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
         children: [
           Row(
             children: [
+              const Icon(Icons.menu_book_rounded,
+                  size: AppSizes.iconS, color: AppColors.deepNavy),
+              const SizedBox(width: AppSizes.paddingXS),
+              Expanded(
+                child: Text(
+                  materia.materia,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.deepNavy, fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.paddingXS),
+          Row(
+            children: [
               const Icon(Icons.person_outline_rounded,
                   size: AppSizes.iconS, color: AppColors.deepNavy),
               const SizedBox(width: AppSizes.paddingXS),
               Text(
                 materia.nombreDocente ?? 'Sin docente',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.deepNavy, fontWeight: FontWeight.w600,
+                  color: AppColors.deepNavy,
                 ),
               ),
             ],
@@ -262,21 +326,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
                   size: AppSizes.iconS, color: AppColors.deepNavy),
               const SizedBox(width: AppSizes.paddingXS),
               Text(
-                materia.horario ?? 'Sin horario',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.deepNavy,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.paddingXS),
-          Row(
-            children: [
-              const Icon(Icons.meeting_room_outlined,
-                  size: AppSizes.iconS, color: AppColors.deepNavy),
-              const SizedBox(width: AppSizes.paddingXS),
-              Text(
-                materia.salon ?? 'Sin salon',
+                materia.horario ?? 'Sesion en curso',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.deepNavy,
                 ),
@@ -302,9 +352,9 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
         ),
         const SizedBox(height: AppSizes.paddingM),
         TextFormField(
-          controller:   _claveController,
-          textAlign:    TextAlign.center,
-          keyboardType: TextInputType.text,
+          controller:         _claveController,
+          textAlign:          TextAlign.center,
+          keyboardType:       TextInputType.text,
           textCapitalization: TextCapitalization.characters,
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
             fontSize:      AppSizes.fontDisplay,
@@ -312,13 +362,12 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
             color:         AppColors.deepNavy,
           ),
           decoration: const InputDecoration(
-            hintText:    '• • • • • •',
-            prefixIcon:  Icon(Icons.vpn_key_outlined),
+            hintText:   '• • • • • •',
+            prefixIcon: Icon(Icons.vpn_key_outlined),
           ),
         ),
         const SizedBox(height: AppSizes.paddingM),
-        if (state.materiaActiva != null)
-          _buildProgressoMateriaActiva(context, state),
+        _buildProgressoMateriaActiva(context, state),
         const SizedBox(height: AppSizes.paddingM),
         SizedBox(
           width:  double.infinity,
@@ -338,26 +387,13 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
                 : const Text('Registrar asistencia'),
           ),
         ),
-        const SizedBox(height: AppSizes.paddingXS),
-        Center(
-          child: Text(
-            'Clave de prueba: ABC123',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color:    AppColors.neutralGrey,
-              fontSize: AppSizes.fontCaption,
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildProgressoMateriaActiva(
-      BuildContext context,
-      HomeAlumnoLoaded state,
-      )
+  Widget _buildProgressoMateriaActiva(BuildContext context, HomeAlumnoLoaded state)
   {
-    final materia = state.materiaActiva!;
+    final materia   = state.materiaActiva!;
     final asistidas = materia.sesionesPresente + materia.sesionesJustificada;
 
     return Column(
@@ -387,9 +423,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
             value:           materia.porcentajeAsistencia / 100,
             minHeight:       6,
             backgroundColor: AppColors.surface,
-            valueColor:      const AlwaysStoppedAnimation<Color>(
-              AppColors.primaryCoral,
-            ),
+            valueColor:      const AlwaysStoppedAnimation<Color>(AppColors.primaryCoral),
           ),
         ),
       ],
@@ -427,16 +461,6 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:         Text('Ingresa la clave de asistencia'),
-          backgroundColor: AppColors.darkSlate,
-        ),
-      );
-      return;
-    }
-
-    if (state.materiaActiva == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:         Text('Selecciona una materia primero'),
           backgroundColor: AppColors.darkSlate,
         ),
       );

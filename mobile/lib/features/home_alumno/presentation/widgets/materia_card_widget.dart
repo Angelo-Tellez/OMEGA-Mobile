@@ -151,18 +151,18 @@ class MateriaCardWidget extends StatelessWidget
 
   Widget _buildRubrosChips(BuildContext context)
   {
-    return Row(
-      children: [
-        _RubroChipWidget(
-          label:  'Ordinario ${materia.porcentajeMinOrdinario.toInt()}%',
-          cumple: materia.cumpleOrdinario,
-        ),
-        const SizedBox(width: AppSizes.paddingS),
-        _RubroChipWidget(
-          label:  'Extraordinario ${materia.porcentajeMinExtraordinario.toInt()}%',
-          cumple: materia.cumpleExtraordinario,
-        ),
-      ],
+    if (materia.rubros.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: AppSizes.paddingS,
+      runSpacing: AppSizes.paddingXS,
+      children: materia.rubros.map((rubro) {
+        final cumple = materia.porcentajeAsistencia >= rubro.porcentajeMinimo;
+        return _RubroChipWidget(
+          label:  '${rubro.nombre} ${rubro.porcentajeMinimo.toInt()}%',
+          cumple: cumple,
+        );
+      }).toList(),
     );
   }
 

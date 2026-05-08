@@ -324,7 +324,6 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           const SizedBox(height: AppSizes.paddingS),
           _buildCuentaItem(context, 'Docente con instituciones', 'docente@test.com'),
-          _buildCuentaItem(context, 'Docente nuevo sin instituciones', 'docente.nuevo@test.com'),
           _buildCuentaItem(context, 'Alumno', 'alumno@test.com'),
           const SizedBox(height: AppSizes.paddingXS),
           Text(

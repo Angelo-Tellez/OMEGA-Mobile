@@ -115,17 +115,15 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
         response.data['data'] as Map<String, dynamic>,
       );
 
-      final claveGenerada = _generarClave();
-
       emit(current.copyWith(
         sesionActiva: sesion,
-        claveActiva:  claveGenerada,
+        claveActiva:  sesion.clave,
       ));
     } on DioException catch (e) {
       final mensaje = e.response?.data?['message'] as String?
           ?? 'No se pudo abrir la sesion.';
-      emit(current.copyWith(sesionActiva: null));
       emit(HomeDocenteError(mensaje: mensaje));
+      await Future.delayed(const Duration(milliseconds: 300));
       emit(current);
     } catch (_) {
       emit(current);
@@ -159,16 +157,5 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
     return (response.data['data'] as List)
         .map((g) => GrupoModel.fromJson(g as Map<String, dynamic>))
         .toList();
-  }
-
-  String _generarClave()
-  {
-    const chars  = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final buffer = StringBuffer();
-    final now    = DateTime.now().millisecondsSinceEpoch;
-    for (int i = 0; i < 6; i++) {
-      buffer.write(chars[(now + i * 7) % chars.length]);
-    }
-    return buffer.toString();
   }
 }

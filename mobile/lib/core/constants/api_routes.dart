@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Rutas de la API del backend Laravel
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Ajuste rutas backend real
+//   [003] 08/05/2026 - Jorge Alejandro Martinez Toris - Ruta registro asistencia alumno
 // ============================================================
 class ApiRoutes
 {
@@ -36,24 +37,25 @@ class ApiRoutes
   static String rubro(int rubroId)        => '/rubros/$rubroId';
 
   // Grupos
-  static String grupos(int institucionId)                    => '/instituciones/$institucionId/grupos';
-  static String grupo(int institucionId, int grupoId)        => '/instituciones/$institucionId/grupos/$grupoId';
-  static String unirseGrupo(String codigo)                   => '/grupos/unirse/$codigo';
-  static String alumnosGrupo(int grupoId)                    => '/grupos/$grupoId/alumnos';
-  static String eliminarAlumno(int grupoId, int alumnoId)    => '/grupos/$grupoId/alumnos/$alumnoId';
+  static String grupos(int institucionId)                 => '/instituciones/$institucionId/grupos';
+  static String grupo(int institucionId, int grupoId)     => '/instituciones/$institucionId/grupos/$grupoId';
+  static String alumnosGrupo(int grupoId)                 => '/grupos/$grupoId/alumnos';
+  static String eliminarAlumno(int grupoId, int alumnoId) => '/grupos/$grupoId/alumnos/$alumnoId';
 
   // Sesiones
-  static String sesiones(int grupoId)                              => '/grupos/$grupoId/sesiones';
-  static String abrirSesion(int grupoId)                          => '/grupos/$grupoId/sesiones/abrir';
-  static String cerrarSesion(int sesionId)                        => '/sesiones/$sesionId/cerrar';
-  static String detalleSesion(int sesionId)                       => '/sesiones/$sesionId';
-  static String validarClave(int sesionId)                        => '/sesiones/$sesionId/validar-clave';
-  static String editarAsistencia(int sesionId, int alumnoId)      => '/sesiones/$sesionId/alumnos/$alumnoId/asistencia';
-  static String historialSesiones(int grupoId)                    => '/grupos/$grupoId/sesiones/historial';
+  static String sesiones(int grupoId)                         => '/grupos/$grupoId/sesiones';
+  static String abrirSesion(int grupoId)                      => '/grupos/$grupoId/sesiones/abrir';
+  static String cerrarSesion(int sesionId)                    => '/sesiones/$sesionId/cerrar';
+  static String detalleSesion(int sesionId)                   => '/sesiones/$sesionId';
+  static String editarAsistencia(int sesionId, int alumnoId)  => '/sesiones/$sesionId/alumnos/$alumnoId/asistencia';
+  static String historialSesiones(int grupoId)                => '/grupos/$grupoId/sesiones/historial';
 
   // Asistencias
-  static String registrarAsistencia(int sesionId) => '/sesiones/$sesionId/asistencias';
+  static String registrarAsistencia(int sesionId) => '/sesiones/$sesionId/registrar-asistencia';
   static String historialAlumno(int alumnoId)     => '/alumnos/$alumnoId/asistencias';
+
+  // Alumno
+  static const String alumnoUnirse = '/grupos/unirse';
 
   // Suscripciones y pagos
   static const String suscripcion         = '/suscripcion';
@@ -68,6 +70,4 @@ class ApiRoutes
   static const String notificaciones    = '/notificaciones';
   static String marcarLeida(int id)     => '/notificaciones/$id/leer';
   static const String marcarTodasLeidas = '/notificaciones/leer-todas';
-
-  static const String alumnoUnirse = '/grupos/unirse';
 }

@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 21/04/2026 - Dev - BLoC home alumno con datos mock
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend
+//   [003] 07/05/2026 - Jorge Alejandro Martinez Toris - Fix: materiaActiva solo si hay sesion activa
 // ============================================================
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,7 +21,6 @@ import '../data/materia_alumno_model.dart';
 
 class HomeAlumnoBloc extends Bloc<HomeAlumnoEvent, HomeAlumnoState>
 {
-
   HomeAlumnoBloc() : super(const HomeAlumnoInitial())
   {
     on<HomeAlumnoStarted>(_onStarted);
@@ -35,23 +35,18 @@ class HomeAlumnoBloc extends Bloc<HomeAlumnoEvent, HomeAlumnoState>
   {
     emit(const HomeAlumnoLoading());
     try {
-
-      final response = await ApiClient.instance.get(
-        ApiRoutes.alumnoGrupos,
-      );
+      final response = await ApiClient.instance.get(ApiRoutes.alumnoGrupos);
 
       final materias = (response.data['data'] as List)
           .map((m) => MateriaAlumnoModel.fromJson(m as Map<String, dynamic>))
           .toList();
 
-      if (materias.isEmpty) {
-        emit(const HomeAlumnoLoaded(materias: []));
-        return;
-      }
+      // Solo marcar activa la materia que tenga sesion abierta en este momento
+      final activa = materias.where((m) => m.tieneSesionActiva).firstOrNull;
 
       emit(HomeAlumnoLoaded(
         materias:      materias,
-        materiaActiva: materias.first,
+        materiaActiva: activa,
       ));
     } on DioException catch (e) {
       emit(HomeAlumnoError(
@@ -70,15 +65,41 @@ class HomeAlumnoBloc extends Bloc<HomeAlumnoEvent, HomeAlumnoState>
   {
     if (state is! HomeAlumnoLoaded) return;
     final current = state as HomeAlumnoLoaded;
+    final sesionId = current.materiaActiva?.sesionActivaId;
+    if (sesionId == null) return;
 
     emit(current.copyWith(registrando: true));
+    try {
+      await ApiClient.instance.post(
+        ApiRoutes.registrarAsistencia(sesionId),
+        data: {'clave': event.clave},
+      );
 
-    // Por ahora la clave se valida localmente — pendiente endpoint de registro
-    await Future.delayed(const Duration(milliseconds: 800));
-    emit(current.copyWith(registrando: false));
-    emit(const HomeAlumnoError(mensaje: 'Funcion de registro proxima a implementar'));
-    await Future.delayed(const Duration(milliseconds: 300));
-    emit(current);
+      // Recargar grupos para actualizar contadores
+      final response = await ApiClient.instance.get(ApiRoutes.alumnoGrupos);
+      final materias = (response.data['data'] as List)
+          .map((m) => MateriaAlumnoModel.fromJson(m as Map<String, dynamic>))
+          .toList();
+
+      final activa = materias.where((m) => m.tieneSesionActiva).firstOrNull;
+
+      emit(HomeAlumnoLoaded(materias: materias, materiaActiva: activa));
+      emit(const HomeAlumnoRegistroExitoso(mensaje: '¡Asistencia registrada correctamente!'));
+      await Future.delayed(const Duration(milliseconds: 300));
+      emit(HomeAlumnoLoaded(materias: materias, materiaActiva: activa));
+
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] as String? ?? 'Error al registrar asistencia.';
+      emit(current.copyWith(registrando: false));
+      emit(HomeAlumnoError(mensaje: msg));
+      await Future.delayed(const Duration(milliseconds: 300));
+      emit(current.copyWith(registrando: false));
+    } catch (_) {
+      emit(current.copyWith(registrando: false));
+      emit(const HomeAlumnoError(mensaje: 'Error de conexion.'));
+      await Future.delayed(const Duration(milliseconds: 300));
+      emit(current.copyWith(registrando: false));
+    }
   }
 
   void _onMateriaSeleccionada(

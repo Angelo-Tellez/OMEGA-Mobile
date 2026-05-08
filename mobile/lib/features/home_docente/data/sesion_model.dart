@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 24/04/2026 - Dev - Modelo de sesion segun entidad del ER
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Ajuste campos backend real
+//   [003] 08/05/2026 - Jorge Alejandro Martinez Toris - Clave viene del backend
 // ============================================================
 class SesionModel
 {
@@ -18,6 +19,7 @@ class SesionModel
   final DateTime  fecha;
   final DateTime  horaApertura;
   final DateTime? horaCierre;
+  final String?   clave;
 
   const SesionModel({
     required this.id,
@@ -26,6 +28,7 @@ class SesionModel
     required this.fecha,
     required this.horaApertura,
     this.horaCierre,
+    this.clave,
   });
 
   bool get isActiva => estado == 1;
@@ -41,6 +44,7 @@ class SesionModel
       horaCierre:   json['hora_cierre'] != null
           ? DateTime.parse(json['hora_cierre'] as String)
           : null,
+      clave:        json['clave'] as String?,
     );
   }
 
@@ -53,6 +57,7 @@ class SesionModel
       'fec_sesion':    fecha.toIso8601String(),
       'hora_apertura': horaApertura.toIso8601String(),
       'hora_cierre':   horaCierre?.toIso8601String(),
+      'clave':         clave,
     };
   }
 }
