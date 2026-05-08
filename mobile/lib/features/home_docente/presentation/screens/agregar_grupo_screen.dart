@@ -13,10 +13,19 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 
 class AgregarGrupoScreen extends StatefulWidget
 {
-  const AgregarGrupoScreen({super.key});
+  final int    institucionId;
+  final String nombreInstitucion;
+
+  const AgregarGrupoScreen({
+    super.key,
+    required this.institucionId,
+    required this.nombreInstitucion,
+  });
 
   @override
   State<AgregarGrupoScreen> createState() => _AgregarGrupoScreenState();
@@ -49,20 +58,37 @@ class _AgregarGrupoScreenState extends State<AgregarGrupoScreen>
 
     setState(() => _cargando = true);
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      await ApiClient.instance.post(
+        ApiRoutes.grupos(widget.institucionId),
+        data: {
+          'nombre':   _nombreController.text.trim(),
+          'materia':  _materiaController.text.trim(),
+          'periodo':  _periodoController.text.trim(),
+        },
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
+      setState(() => _cargando = false);
 
-    setState(() => _cargando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:         Text('Grupo creado correctamente'),
+          backgroundColor: AppColors.successGreen,
+        ),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:         Text('Grupo creado correctamente'),
-        backgroundColor: AppColors.successGreen,
-      ),
-    );
-
-    Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cargando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:         Text('Error al crear el grupo'),
+          backgroundColor: AppColors.actionRed,
+        ),
+      );
+    }
   }
 
   @override

@@ -8,8 +8,8 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Rutas de la API del backend Laravel
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Ajuste rutas backend real
 // ============================================================
-
 class ApiRoutes
 {
   ApiRoutes._();
@@ -25,34 +25,31 @@ class ApiRoutes
   // Usuarios
   static const String perfil           = '/auth/me';
   static const String actualizarPerfil = '/usuarios/perfil';
-  static const String alumnoGrupos = '/alumno/grupos';
+  static const String alumnoGrupos     = '/alumno/grupos';
 
   // Instituciones
-  static const String instituciones     = '/instituciones';
-  static String institucion(int id)     => '/instituciones/$id';
+  static const String instituciones = '/instituciones';
+  static String institucion(int id) => '/instituciones/$id';
 
   // Rubros
   static String rubros(int institucionId) => '/instituciones/$institucionId/rubros';
-  static String rubro(int institucionId, int rubroId) =>
-      '/instituciones/$institucionId/rubros/$rubroId';
+  static String rubro(int rubroId)        => '/rubros/$rubroId';
 
   // Grupos
-  static String grupos(int institucionId) => '/instituciones/$institucionId/grupos';
-  static String grupo(int institucionId, int grupoId) =>
-      '/instituciones/$institucionId/grupos/$grupoId';
-  static String unirseGrupo(String codigo) => '/grupos/unirse/$codigo';
-  static String alumnosGrupo(int grupoId)  => '/grupos/$grupoId/alumnos';
-  static String eliminarAlumno(int grupoId, int alumnoId) =>
-      '/grupos/$grupoId/alumnos/$alumnoId';
+  static String grupos(int institucionId)                    => '/instituciones/$institucionId/grupos';
+  static String grupo(int institucionId, int grupoId)        => '/instituciones/$institucionId/grupos/$grupoId';
+  static String unirseGrupo(String codigo)                   => '/grupos/unirse/$codigo';
+  static String alumnosGrupo(int grupoId)                    => '/grupos/$grupoId/alumnos';
+  static String eliminarAlumno(int grupoId, int alumnoId)    => '/grupos/$grupoId/alumnos/$alumnoId';
 
   // Sesiones
-  static String sesiones(int grupoId)           => '/grupos/$grupoId/sesiones';
-  static String abrirSesion(int grupoId)        => '/grupos/$grupoId/sesiones/abrir';
-  static String cerrarSesion(int sesionId)      => '/sesiones/$sesionId/cerrar';
-  static String detalleSesion(int sesionId)     => '/sesiones/$sesionId';
-  static String validarClave(int sesionId)      => '/sesiones/$sesionId/validar-clave';
-  static String editarAsistencia(int sesionId, int alumnoId) =>
-      '/sesiones/$sesionId/asistencias/$alumnoId';
+  static String sesiones(int grupoId)                              => '/grupos/$grupoId/sesiones';
+  static String abrirSesion(int grupoId)                          => '/grupos/$grupoId/sesiones/abrir';
+  static String cerrarSesion(int sesionId)                        => '/sesiones/$sesionId/cerrar';
+  static String detalleSesion(int sesionId)                       => '/sesiones/$sesionId';
+  static String validarClave(int sesionId)                        => '/sesiones/$sesionId/validar-clave';
+  static String editarAsistencia(int sesionId, int alumnoId)      => '/sesiones/$sesionId/alumnos/$alumnoId/asistencia';
+  static String historialSesiones(int grupoId)                    => '/grupos/$grupoId/sesiones/historial';
 
   // Asistencias
   static String registrarAsistencia(int sesionId) => '/sesiones/$sesionId/asistencias';
@@ -68,9 +65,7 @@ class ApiRoutes
   static String reporteGrupo(int grupoId) => '/grupos/$grupoId/reporte';
 
   // Notificaciones
-  static const String notificaciones        = '/notificaciones';
-  static String marcarLeida(int id)         => '/notificaciones/$id/leer';
-  static const String marcarTodasLeidas     = '/notificaciones/leer-todas';
-
-
+  static const String notificaciones    = '/notificaciones';
+  static String marcarLeida(int id)     => '/notificaciones/$id/leer';
+  static const String marcarTodasLeidas = '/notificaciones/leer-todas';
 }

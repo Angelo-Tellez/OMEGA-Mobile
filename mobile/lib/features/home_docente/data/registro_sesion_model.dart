@@ -4,29 +4,28 @@
 // File       : registro_sesion_model.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Modelo de registro de asistencia en sesion
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Ajuste campos backend real
 // ============================================================
-
 class RegistroSesionModel
 {
-  final int    alumnoId;
-  final String nombreAlumno;
-  final String email;
-  final int    estado;
-  final String horaRegistro;
+  final int     alumnoId;
+  final String  nombreAlumno;
+  final String? email;
+  final int     estado;
+  final String? horaRegistro;
 
   const RegistroSesionModel({
     required this.alumnoId,
     required this.nombreAlumno,
-    required this.email,
+    this.email,
     required this.estado,
-    required this.horaRegistro,
+    this.horaRegistro,
   });
 
-  // estado 1 = presente, 2 = falta, 3 = justificada
   bool get isPresente    => estado == 1;
   bool get isFalta       => estado == 2;
   bool get isJustificada => estado == 3;
@@ -52,22 +51,10 @@ class RegistroSesionModel
   factory RegistroSesionModel.fromJson(Map<String, dynamic> json)
   {
     return RegistroSesionModel(
-      alumnoId:     json['alumno_id']      as int,
-      nombreAlumno: json['nombre_alumno']  as String,
-      email:        json['email']          as String,
-      estado:       json['estado']         as int,
-      horaRegistro: json['hora_registro']  as String,
+      alumnoId:     json['id_alumno']      as int,
+      nombreAlumno: json['nombre_alumno']  as String? ?? 'Sin nombre',
+      estado:       json['est_asistencia'] as int,
+      horaRegistro: json['hora_registro']  as String?,
     );
-  }
-
-  Map<String, dynamic> toJson()
-  {
-    return {
-      'alumno_id':     alumnoId,
-      'nombre_alumno': nombreAlumno,
-      'email':         email,
-      'estado':        estado,
-      'hora_registro': horaRegistro,
-    };
   }
 }

@@ -85,10 +85,16 @@ class AppRouter
       GoRoute(
         path:    homeDocente,
         builder: (context, state) => const HomeDocenteScreen(),
-      ),
-      GoRoute(
+      ),GoRoute(
         path:    agregarGrupo,
-        builder: (context, state) => const AgregarGrupoScreen(),
+        builder: (context, state)
+        {
+          final args = state.extra as Map<String, dynamic>;
+          return AgregarGrupoScreen(
+            institucionId:     args['institucionId']     as int,
+            nombreInstitucion: args['nombreInstitucion'] as String,
+          );
+        },
       ),
       GoRoute(
         path:    alumnosGrupo,

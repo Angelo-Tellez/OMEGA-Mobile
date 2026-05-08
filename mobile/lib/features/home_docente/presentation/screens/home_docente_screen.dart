@@ -137,7 +137,26 @@ class _HomeDocenteView extends StatelessWidget
           foregroundColor: AppColors.baseSurface,
           icon:            const Icon(Icons.group_add_rounded),
           label:           const Text('Nuevo grupo'),
-          onPressed: () => context.push(AppRouter.agregarGrupo),
+          onPressed: ()
+          {
+            final state = context.read<HomeDocenteBloc>().state;
+            if (state is! HomeDocenteLoaded || state.institucionActiva == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:         Text('Selecciona una institucion primero'),
+                  backgroundColor: AppColors.darkSlate,
+                ),
+              );
+              return;
+            }
+            context.push(
+              AppRouter.agregarGrupo,
+              extra: {
+                'institucionId':     state.institucionActiva!.id,
+                'nombreInstitucion': state.institucionActiva!.nombre,
+              },
+            );
+          },
         ),
       ],
     );

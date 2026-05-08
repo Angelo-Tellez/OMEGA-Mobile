@@ -4,13 +4,16 @@
 // File       : rubros_screen.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de configuracion de rubros por institucion
+//   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de configuracion de rubros
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion backend real
 // ============================================================
 
 import 'package:flutter/material.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../data/rubro_model.dart';
@@ -33,62 +36,111 @@ class RubrosScreen extends StatefulWidget
 
 class _RubrosScreenState extends State<RubrosScreen>
 {
-  final List<RubroModel> _rubros = [
-    const RubroModel(id: 1, institucionId: 1, nombre: 'Ordinario',      porcentajeMinimo: 80),
-    const RubroModel(id: 2, institucionId: 1, nombre: 'Extraordinario', porcentajeMinimo: 60),
-  ];
+  List<RubroModel> _rubros   = [];
+  bool             _cargando = true;
 
-  int _nextId = 3;
+  @override
+  void initState()
+  {
+    super.initState();
+    _cargarRubros();
+  }
+
+  Future<void> _cargarRubros() async
+  {
+    setState(() => _cargando = true);
+    try {
+      print('[ATN] Cargando rubros de institucion: ${widget.institucionId}');
+      final response = await ApiClient.instance.get(
+        ApiRoutes.rubros(widget.institucionId),
+      );
+      print('[ATN] Rubros response: ${response.data}');
+      setState(() {
+        _rubros   = (response.data['data'] as List)
+            .map((r) => RubroModel.fromJson(r as Map<String, dynamic>))
+            .toList();
+        _cargando = false;
+      });
+    } catch (e) {
+      print('[ATN] Error rubros: $e');
+      setState(() => _cargando = false);
+    }
+  }
 
   Future<void> _onAgregarPressed() async
   {
     final resultado = await AgregarRubroDialog.show(context);
+    if (resultado == null || !mounted) return;
 
-    if (resultado != null && mounted) {
-      setState(()
-      {
-        _rubros.add(RubroModel(
-          id:               _nextId++,
-          institucionId:    widget.institucionId,
-          nombre:           resultado['nombre']           as String,
-          porcentajeMinimo: resultado['porcentajeMinimo'] as double,
-        ));
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:         Text('Rubro agregado correctamente'),
-          backgroundColor: AppColors.successGreen,
-        ),
+    try {
+      final response = await ApiClient.instance.post(
+        ApiRoutes.rubros(widget.institucionId),
+        data: {
+          'nombre':            resultado['nombre']           as String,
+          'porcentaje_minimo': resultado['porcentajeMinimo'] as double,
+        },
       );
+      final nuevoRubro = RubroModel.fromJson(
+        response.data['data'] as Map<String, dynamic>,
+      );
+      setState(() => _rubros.add(nuevoRubro));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('Rubro agregado correctamente'),
+            backgroundColor: AppColors.successGreen,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('Error al agregar el rubro'),
+            backgroundColor: AppColors.actionRed,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _onEditarPressed(RubroModel rubro) async
   {
-    final resultado = await AgregarRubroDialog.show(
-      context,
-      rubroExistente: rubro,
-    );
+    final resultado = await AgregarRubroDialog.show(context, rubroExistente: rubro);
+    if (resultado == null || !mounted) return;
 
-    if (resultado != null && mounted) {
-      setState(()
-      {
-        final index = _rubros.indexWhere((r) => r.id == rubro.id);
-        if (index != -1) {
-          _rubros[index] = rubro.copyWith(
-            nombre:           resultado['nombre']           as String,
-            porcentajeMinimo: resultado['porcentajeMinimo'] as double,
-          );
-        }
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:         Text('Rubro actualizado correctamente'),
-          backgroundColor: AppColors.successGreen,
-        ),
+    try {
+      final response = await ApiClient.instance.put(
+        ApiRoutes.rubro(rubro.id),
+        data: {
+          'nombre':            resultado['nombre']           as String,
+          'porcentaje_minimo': resultado['porcentajeMinimo'] as double,
+        },
       );
+      final rubroActualizado = RubroModel.fromJson(
+        response.data['data'] as Map<String, dynamic>,
+      );
+      setState(() {
+        final index = _rubros.indexWhere((r) => r.id == rubro.id);
+        if (index != -1) _rubros[index] = rubroActualizado;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('Rubro actualizado correctamente'),
+            backgroundColor: AppColors.successGreen,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('Error al actualizar el rubro'),
+            backgroundColor: AppColors.actionRed,
+          ),
+        );
+      }
     }
   }
 
@@ -141,13 +193,29 @@ class _RubrosScreenState extends State<RubrosScreen>
     );
 
     if (confirmar == true && mounted) {
-      setState(() => _rubros.removeWhere((r) => r.id == rubro.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:         Text('Rubro "${rubro.nombre}" eliminado'),
-          backgroundColor: AppColors.darkSlate,
-        ),
-      );
+      try {
+        await ApiClient.instance.delete(
+          ApiRoutes.rubro(rubro.id),
+        );
+        setState(() => _rubros.removeWhere((r) => r.id == rubro.id));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:         Text('Rubro "${rubro.nombre}" eliminado'),
+              backgroundColor: AppColors.darkSlate,
+            ),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:         Text('Error al eliminar el rubro'),
+              backgroundColor: AppColors.actionRed,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -210,15 +278,11 @@ class _RubrosScreenState extends State<RubrosScreen>
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            color: AppColors.deepNavy,
-            size:  AppSizes.iconM,
-          ),
+          const Icon(Icons.info_outline_rounded, color: AppColors.deepNavy, size: AppSizes.iconM),
           const SizedBox(width: AppSizes.paddingM),
           Expanded(
             child: Text(
-              'Los rubros definen el porcentaje minimo de asistencia que un alumno necesita para tener derecho a cada tipo de evaluacion. Cada institucion puede tener sus propios rubros.',
+              'Los rubros definen el porcentaje minimo de asistencia que un alumno necesita para tener derecho a cada tipo de evaluacion.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:    AppColors.deepNavy,
                 fontSize: AppSizes.fontCaption,
@@ -232,16 +296,16 @@ class _RubrosScreenState extends State<RubrosScreen>
 
   Widget _buildLista(BuildContext context)
   {
+    if (_cargando) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryCoral));
+    }
+
     if (_rubros.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.assignment_outlined,
-              size:  64,
-              color: AppColors.surface,
-            ),
+            const Icon(Icons.assignment_outlined, size: 64, color: AppColors.surface),
             const SizedBox(height: AppSizes.paddingM),
             Text(
               'Sin rubros configurados',
@@ -253,9 +317,7 @@ class _RubrosScreenState extends State<RubrosScreen>
             const SizedBox(height: AppSizes.paddingS),
             Text(
               'Agrega los rubros de evaluacion para esta institucion.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.neutralGrey,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -265,9 +327,7 @@ class _RubrosScreenState extends State<RubrosScreen>
 
     return ListView.separated(
       padding:          const EdgeInsets.fromLTRB(
-        AppSizes.paddingM,
-        0,
-        AppSizes.paddingM,
+        AppSizes.paddingM, 0, AppSizes.paddingM,
         AppSizes.paddingXL + AppSizes.heightButton,
       ),
       itemCount:        _rubros.length,
@@ -348,23 +408,21 @@ class _RubroCardWidget extends StatelessWidget
                 ),
                 Text(
                   'Minimo ${rubro.porcentajeMinimo.toInt()}% de asistencia requerido',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.neutralGrey,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon:    const Icon(Icons.edit_outlined),
-            color:   AppColors.headingDark,
-            tooltip: 'Editar',
+            icon:      const Icon(Icons.edit_outlined),
+            color:     AppColors.headingDark,
+            tooltip:   'Editar',
             onPressed: onEditar,
           ),
           IconButton(
-            icon:    const Icon(Icons.delete_outline_rounded),
-            color:   AppColors.actionRed,
-            tooltip: 'Eliminar',
+            icon:      const Icon(Icons.delete_outline_rounded),
+            color:     AppColors.actionRed,
+            tooltip:   'Eliminar',
             onPressed: onEliminar,
           ),
         ],

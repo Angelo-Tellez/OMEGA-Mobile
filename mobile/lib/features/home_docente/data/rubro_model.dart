@@ -40,18 +40,18 @@ class RubroModel
   factory RubroModel.fromJson(Map<String, dynamic> json)
   {
     return RubroModel(
-      id:               json['id']                as int,
-      institucionId:    json['institucion_id']    as int,
-      nombre:           json['nombre']            as String,
-      porcentajeMinimo: (json['porcentaje_minimo'] as num).toDouble(),
+      id:               json['id_rubro']          as int,
+      institucionId:    json['id_institucion']     as int,
+      nombre:           json['nombre']             as String,
+      porcentajeMinimo: double.parse(json['porcentaje_minimo'].toString()),
     );
   }
 
   Map<String, dynamic> toJson()
   {
     return {
-      'id':                id,
-      'institucion_id':    institucionId,
+      'id_rubro':          id,
+      'id_institucion':    institucionId,
       'nombre':            nombre,
       'porcentaje_minimo': porcentajeMinimo,
     };

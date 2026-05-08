@@ -15,6 +15,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/app_router.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 
 class AgregarInstitucionScreen extends StatefulWidget
 {
@@ -111,21 +113,51 @@ class _AgregarInstitucionScreenState extends State<AgregarInstitucionScreen>
     }
 
     setState(() => _cargando = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _cargando = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:         Text('Institucion creada correctamente'),
-        backgroundColor: AppColors.successGreen,
-      ),
-    );
+    try {
+      // 1. Crear institución
+      final respInst = await ApiClient.instance.post(
+        ApiRoutes.instituciones,
+        data: {'nombre': _nombreController.text.trim()},
+      );
 
-    if (widget.esOnboarding) {
-      context.go(AppRouter.homeDocente);
-    } else {
-      Navigator.of(context).pop();
+      final institucionId = respInst.data['data']['id_institucion'] as int;
+
+      // 2. Crear rubros
+      for (final rubro in _rubros) {
+        await ApiClient.instance.post(
+          ApiRoutes.rubros(institucionId),
+          data: {
+            'nombre':            rubro.nombreController.text.trim(),
+            'porcentaje_minimo': rubro.porcentaje.toInt(),
+          },
+        );
+      }
+
+      if (!mounted) return;
+      setState(() => _cargando = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:         Text('Institucion creada correctamente'),
+          backgroundColor: AppColors.successGreen,
+        ),
+      );
+
+      if (widget.esOnboarding) {
+        context.go(AppRouter.homeDocente);
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cargando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:         Text('Error al crear la institucion'),
+          backgroundColor: AppColors.actionRed,
+        ),
+      );
     }
   }
 

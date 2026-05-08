@@ -4,20 +4,22 @@
 // File       : historial_sesiones_screen.dart
 // Created on : 27/04/2026
 // Created by : Jorge Alejandro Martinez Toris
-// Reviewed by: Ximena Becerril Olivares
+// Reviewed by:
 // ------------------------------------------------------------
 // Changelog:
-//   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de historial de sesiones del grupo
+//   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla historial de sesiones
+//   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion backend real
 // ============================================================
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/connection/api_client.dart';
+import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/app_router.dart';
 import '../../data/sesion_historial_model.dart';
 
-class HistorialSesionesScreen extends StatelessWidget
+class HistorialSesionesScreen extends StatefulWidget
 {
   final int    grupoId;
   final String nombreGrupo;
@@ -30,48 +32,38 @@ class HistorialSesionesScreen extends StatelessWidget
     required this.nombreMateria,
   });
 
-  static final _mockSesiones = [
-    const SesionHistorialModel(
-      id: 10, fecha: '25/04/2026', horaApertura: '10:00', horaCierre: '10:45',
-      totalAlumnos: 28, presentes: 25, faltas: 3, justificadas: 0,
-    ),
-    const SesionHistorialModel(
-      id: 9, fecha: '23/04/2026', horaApertura: '10:01', horaCierre: '10:38',
-      totalAlumnos: 28, presentes: 26, faltas: 2, justificadas: 0,
-    ),
-    const SesionHistorialModel(
-      id: 8, fecha: '21/04/2026', horaApertura: '10:00', horaCierre: '10:52',
-      totalAlumnos: 28, presentes: 20, faltas: 6, justificadas: 2,
-    ),
-    const SesionHistorialModel(
-      id: 7, fecha: '18/04/2026', horaApertura: '10:02', horaCierre: '10:41',
-      totalAlumnos: 28, presentes: 27, faltas: 1, justificadas: 0,
-    ),
-    const SesionHistorialModel(
-      id: 6, fecha: '16/04/2026', horaApertura: '10:00', horaCierre: '10:35',
-      totalAlumnos: 28, presentes: 24, faltas: 3, justificadas: 1,
-    ),
-    const SesionHistorialModel(
-      id: 5, fecha: '14/04/2026', horaApertura: '10:01', horaCierre: '10:48',
-      totalAlumnos: 28, presentes: 28, faltas: 0, justificadas: 0,
-    ),
-    const SesionHistorialModel(
-      id: 4, fecha: '11/04/2026', horaApertura: '10:00', horaCierre: '10:39',
-      totalAlumnos: 28, presentes: 22, faltas: 5, justificadas: 1,
-    ),
-    const SesionHistorialModel(
-      id: 3, fecha: '09/04/2026', horaApertura: '10:03', horaCierre: '10:44',
-      totalAlumnos: 28, presentes: 26, faltas: 2, justificadas: 0,
-    ),
-    const SesionHistorialModel(
-      id: 2, fecha: '07/04/2026', horaApertura: '10:00', horaCierre: '10:37',
-      totalAlumnos: 28, presentes: 25, faltas: 3, justificadas: 0,
-    ),
-    const SesionHistorialModel(
-      id: 1, fecha: '04/04/2026', horaApertura: '10:01', horaCierre: '10:42',
-      totalAlumnos: 28, presentes: 23, faltas: 5, justificadas: 0,
-    ),
-  ];
+  @override
+  State<HistorialSesionesScreen> createState() => _HistorialSesionesScreenState();
+}
+
+class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
+{
+  List<SesionHistorialModel> _sesiones  = [];
+  bool                       _cargando  = true;
+  String?                    _error;
+
+  @override
+  void initState()
+  {
+    super.initState();
+    _cargarHistorial();
+  }
+
+  Future<void> _cargarHistorial() async
+  {
+    setState(() { _cargando = true; _error = null; });
+    try {
+      final response = await ApiClient.instance.get(
+        ApiRoutes.historialSesiones(widget.grupoId),
+      );
+      final sesiones = (response.data['data'] as List)
+          .map((s) => SesionHistorialModel.fromJson(s as Map<String, dynamic>))
+          .toList();
+      setState(() { _sesiones = sesiones; _cargando = false; });
+    } catch (_) {
+      setState(() { _error = 'Error al cargar el historial.'; _cargando = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context)
@@ -85,9 +77,9 @@ class HistorialSesionesScreen extends StatelessWidget
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(nombreMateria),
+            Text(widget.nombreMateria),
             Text(
-              nombreGrupo,
+              widget.nombreGrupo,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.neutralGrey,
               ),
@@ -96,7 +88,11 @@ class HistorialSesionesScreen extends StatelessWidget
         ),
       ),
       body: SafeArea(
-        child: Column(
+        child: _cargando
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryCoral))
+            : _error != null
+            ? Center(child: Text(_error!))
+            : Column(
           children: [
             _buildResumenGeneral(context),
             Expanded(child: _buildLista(context)),
@@ -108,12 +104,12 @@ class HistorialSesionesScreen extends StatelessWidget
 
   Widget _buildResumenGeneral(BuildContext context)
   {
-    final totalSesiones  = _mockSesiones.length;
-    final totalPresentes = _mockSesiones.fold<int>(0, (s, e) => s + e.presentes);
-    final totalFaltas    = _mockSesiones.fold<int>(0, (s, e) => s + e.faltas);
-    final promedioAsis   = _mockSesiones.isEmpty
+    final totalSesiones  = _sesiones.length;
+    final totalPresentes = _sesiones.fold<int>(0, (s, e) => s + e.presentes);
+    final totalFaltas    = _sesiones.fold<int>(0, (s, e) => s + e.faltas);
+    final promedioAsis   = _sesiones.isEmpty
         ? 0.0
-        : _mockSesiones.fold<double>(0, (s, e) => s + e.porcentajeAsistencia) / totalSesiones;
+        : _sesiones.fold<double>(0, (s, e) => s + e.porcentajeAsistencia) / totalSesiones;
 
     return Container(
       margin:  const EdgeInsets.all(AppSizes.paddingM),
@@ -124,34 +120,10 @@ class HistorialSesionesScreen extends StatelessWidget
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: totalSesiones.toString(),
-              label: 'Sesiones',
-              color: AppColors.deepNavy,
-            ),
-          ),
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: totalPresentes.toString(),
-              label: 'Asistencias',
-              color: AppColors.successGreen,
-            ),
-          ),
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: totalFaltas.toString(),
-              label: 'Faltas',
-              color: AppColors.actionRed,
-            ),
-          ),
-          Expanded(
-            child: _ResumenItemWidget(
-              valor: '${promedioAsis.toStringAsFixed(0)}%',
-              label: 'Promedio',
-              color: AppColors.primaryCoral,
-            ),
-          ),
+          Expanded(child: _ResumenItemWidget(valor: totalSesiones.toString(), label: 'Sesiones',   color: AppColors.deepNavy)),
+          Expanded(child: _ResumenItemWidget(valor: totalPresentes.toString(), label: 'Asistencias', color: AppColors.successGreen)),
+          Expanded(child: _ResumenItemWidget(valor: totalFaltas.toString(),    label: 'Faltas',      color: AppColors.actionRed)),
+          Expanded(child: _ResumenItemWidget(valor: '${promedioAsis.toStringAsFixed(0)}%', label: 'Promedio', color: AppColors.primaryCoral)),
         ],
       ),
     );
@@ -159,19 +131,26 @@ class HistorialSesionesScreen extends StatelessWidget
 
   Widget _buildLista(BuildContext context)
   {
-    return ListView.separated(
-      padding:          const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-      itemCount:        _mockSesiones.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSizes.paddingS),
-      itemBuilder: (context, index)
-      {
-        final sesion = _mockSesiones[index];
-        return _SesionCardWidget(
-          sesion:        sesion,
-          nombreGrupo:   nombreGrupo,
-          nombreMateria: nombreMateria,
-        );
-      },
+    if (_sesiones.isEmpty) {
+      return const Center(child: Text('No hay sesiones registradas.'));
+    }
+    return RefreshIndicator(
+      color:     AppColors.primaryCoral,
+      onRefresh: _cargarHistorial,
+      child: ListView.separated(
+        padding:          const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+        itemCount:        _sesiones.length,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSizes.paddingS),
+        itemBuilder: (context, index)
+        {
+          final sesion = _sesiones[index];
+          return _SesionCardWidget(
+            sesion:        sesion,
+            nombreGrupo:   widget.nombreGrupo,
+            nombreMateria: widget.nombreMateria,
+          );
+        },
+      ),
     );
   }
 }
@@ -275,11 +254,7 @@ class _SesionCardWidget extends StatelessWidget
             color:        AppColors.subtleWarm,
             borderRadius: BorderRadius.circular(AppSizes.radiusInput),
           ),
-          child: const Icon(
-            Icons.event_note_rounded,
-            color: AppColors.primaryCoral,
-            size:  AppSizes.iconM,
-          ),
+          child: const Icon(Icons.event_note_rounded, color: AppColors.primaryCoral, size: AppSizes.iconM),
         ),
         const SizedBox(width: AppSizes.paddingM),
         Expanded(
@@ -295,14 +270,10 @@ class _SesionCardWidget extends StatelessWidget
               ),
               Row(
                 children: [
-                  const Icon(
-                    Icons.schedule_outlined,
-                    size:  12,
-                    color: AppColors.neutralGrey,
-                  ),
+                  const Icon(Icons.schedule_outlined, size: 12, color: AppColors.neutralGrey),
                   const SizedBox(width: AppSizes.paddingXS),
                   Text(
-                    '${sesion.horaApertura} — ${sesion.horaCierre}',
+                    '${sesion.horaApertura} — ${sesion.horaCierre ?? 'En curso'}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color:    AppColors.neutralGrey,
                       fontSize: AppSizes.fontCaption,
@@ -313,10 +284,7 @@ class _SesionCardWidget extends StatelessWidget
             ],
           ),
         ),
-        const Icon(
-          Icons.chevron_right_rounded,
-          color: AppColors.neutralGrey,
-        ),
+        const Icon(Icons.chevron_right_rounded, color: AppColors.neutralGrey),
       ],
     );
   }
@@ -330,9 +298,7 @@ class _SesionCardWidget extends StatelessWidget
           children: [
             Text(
               '${sesion.presentes + sesion.justificadas}/${sesion.totalAlumnos} asistencias',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.neutralGrey,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey),
             ),
             Text(
               '${sesion.porcentajeAsistencia.toStringAsFixed(0)}%',
@@ -361,23 +327,11 @@ class _SesionCardWidget extends StatelessWidget
   {
     return Row(
       children: [
-        _ContadorWidget(
-          valor: sesion.presentes,
-          label: 'Presentes',
-          color: AppColors.successGreen,
-        ),
+        _ContadorWidget(valor: sesion.presentes,    label: 'Presentes',   color: AppColors.successGreen),
         const SizedBox(width: AppSizes.paddingS),
-        _ContadorWidget(
-          valor: sesion.faltas,
-          label: 'Faltas',
-          color: AppColors.actionRed,
-        ),
+        _ContadorWidget(valor: sesion.faltas,       label: 'Faltas',      color: AppColors.actionRed),
         const SizedBox(width: AppSizes.paddingS),
-        _ContadorWidget(
-          valor: sesion.justificadas,
-          label: 'Justificadas',
-          color: AppColors.warningOrange,
-        ),
+        _ContadorWidget(valor: sesion.justificadas, label: 'Justificadas', color: AppColors.warningOrange),
       ],
     );
   }
@@ -405,7 +359,7 @@ class _ContadorWidget extends StatelessWidget
           vertical:   AppSizes.paddingXS,
         ),
         decoration: BoxDecoration(
-          color:color.withValues(alpha: 0.1),
+          color:        color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppSizes.radiusInput),
         ),
         child: Row(
