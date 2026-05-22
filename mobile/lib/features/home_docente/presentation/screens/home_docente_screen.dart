@@ -8,6 +8,7 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [003] 28/04/2026 - Jorge Alejandro Martinez Toris - Pantalla principal del docente
+//   [004] 22/05/2026 - Jorge Alejandro Martinez Toris - Gate plan: limite de grupos para basico
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/app_router.dart';
+import '../../../../core/services/suscripcion_service.dart';
 import '../../../../features/auth/bloc/auth_bloc.dart';
 import '../../../../features/auth/bloc/auth_event.dart';
 import '../../../../features/auth/bloc/auth_state.dart';
@@ -137,26 +139,7 @@ class _HomeDocenteView extends StatelessWidget
           foregroundColor: AppColors.baseSurface,
           icon:            const Icon(Icons.group_add_rounded),
           label:           const Text('Nuevo grupo'),
-          onPressed: ()
-          {
-            final state = context.read<HomeDocenteBloc>().state;
-            if (state is! HomeDocenteLoaded || state.institucionActiva == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:         Text('Selecciona una institucion primero'),
-                  backgroundColor: AppColors.darkSlate,
-                ),
-              );
-              return;
-            }
-            context.push(
-              AppRouter.agregarGrupo,
-              extra: {
-                'institucionId':     state.institucionActiva!.id,
-                'nombreInstitucion': state.institucionActiva!.nombre,
-              },
-            );
-          },
+          onPressed: () => _onNuevoGrupo(context),
         ),
       ],
     );
@@ -166,6 +149,64 @@ class _HomeDocenteView extends StatelessWidget
   {
     context.read<AuthBloc>().add(const AuthLogoutRequested());
     context.go(AppRouter.login);
+  }
+
+  Future<void> _onNuevoGrupo(BuildContext context) async
+  {
+    final state = context.read<HomeDocenteBloc>().state;
+    if (state is! HomeDocenteLoaded || state.institucionActiva == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:         Text('Selecciona una institucion primero'),
+          backgroundColor: AppColors.darkSlate,
+        ),
+      );
+      return;
+    }
+
+    // Gate: plan basico solo puede tener 1 grupo
+    final suscripcion = await SuscripcionService.obtener();
+    final esBasico    = !(suscripcion?.isMensual ?? false);
+    if (esBasico && state.grupos.length >= 1) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: AppColors.baseSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+          ),
+          title: const Text('Limite del Plan Basico'),
+          content: const Text(
+            'El Plan Basico permite 1 aula activa. Mejora al Plan Mensual para crear grupos ilimitados.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push(AppRouter.suscripcion);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryCoral),
+              child: const Text('Ver planes'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    context.push(
+      AppRouter.agregarGrupo,
+      extra: {
+        'institucionId':     state.institucionActiva!.id,
+        'nombreInstitucion': state.institucionActiva!.nombre,
+      },
+    );
   }
 
   Widget _buildBodyContent(BuildContext context, HomeDocenteState state)

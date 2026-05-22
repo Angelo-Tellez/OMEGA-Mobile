@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de reportes
 //   [002] 08/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend
+//   [003] 22/05/2026 - Jorge Alejandro Martinez Toris - Gate plan mensual
 // ============================================================
 
 import 'package:dio/dio.dart';
@@ -17,6 +18,9 @@ import '../../../../core/connection/api_client.dart';
 import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/services/suscripcion_service.dart';
+import '../../../../core/widgets/plan_upgrade_widget.dart';
+import '../../../../features/suscripcion/data/suscripcion_model.dart';
 import '../../data/institucion_model.dart';
 import '../../data/grupo_model.dart';
 import '../../data/alumno_grupo_model.dart';
@@ -40,12 +44,23 @@ class _ReportesScreenState extends State<ReportesScreen>
   bool                   _cargandoGrupos  = false;
   bool                   _cargandoAlumnos = false;
   String?                _error;
+  SuscripcionModel?      _suscripcion;
 
   @override
   void initState()
   {
     super.initState();
-    _cargarInstituciones();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async
+  {
+    _suscripcion = await SuscripcionService.obtener();
+    if (mounted && (_suscripcion?.isMensual ?? false)) {
+      _cargarInstituciones();
+    } else if (mounted) {
+      setState(() => _cargandoInst = false);
+    }
   }
 
   Future<void> _cargarInstituciones() async
@@ -110,6 +125,18 @@ class _ReportesScreenState extends State<ReportesScreen>
       body: SafeArea(
         child: _cargandoInst
             ? const Center(child: CircularProgressIndicator(color: AppColors.primaryCoral))
+            : !(_suscripcion?.isMensual ?? false)
+            ? const PlanUpgradeWidget(
+                icono:       '📊',
+                titulo:      'Reportes — Plan Mensual',
+                descripcion: 'Consulta el historial completo de asistencias de todos tus grupos y exporta reportes detallados.',
+                beneficios:  [
+                  'Historial completo por periodo',
+                  'Estadisticas por alumno y grupo',
+                  'Exportar a Excel y PDF',
+                  'Aulas y grupos ilimitados',
+                ],
+              )
             : _error != null
             ? _buildError()
             : ListView(

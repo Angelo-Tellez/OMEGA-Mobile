@@ -17,6 +17,7 @@ import '../../../../core/connection/api_client.dart';
 import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/services/suscripcion_service.dart';
 
 class PaypalScreen extends StatefulWidget
 {
@@ -105,17 +106,20 @@ class _PaypalScreenState extends State<PaypalScreen>
         data: {'order_id': widget.orderId},
       );
 
+      // Invalida cache para que los gates recarguen el nuevo plan
+      SuscripcionService.invalidar();
+
       if (!mounted) return;
       _mostrarDialogoExito();
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _procesando = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:         Text('Error al confirmar: $e'),
+        const SnackBar(
+          content:         Text('El pago fue aprobado pero ocurrio un error al confirmarlo. Contacta a soporte.'),
           backgroundColor: AppColors.warningOrange,
           behavior:        SnackBarBehavior.floating,
-          duration:        const Duration(seconds: 10),
+          duration:        Duration(seconds: 6),
         ),
       );
     }

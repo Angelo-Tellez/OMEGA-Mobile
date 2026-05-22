@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla historial de sesiones
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion backend real
+//   [003] 22/05/2026 - Jorge Alejandro Martinez Toris - Limite 1 semana para plan basico
 // ============================================================
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,9 @@ import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/app_router.dart';
+import '../../../../core/services/suscripcion_service.dart';
+import '../../../../core/widgets/plan_upgrade_widget.dart';
+import '../../../../features/suscripcion/data/suscripcion_model.dart';
 import '../../data/sesion_historial_model.dart';
 
 class HistorialSesionesScreen extends StatefulWidget
@@ -38,9 +42,11 @@ class HistorialSesionesScreen extends StatefulWidget
 
 class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
 {
-  List<SesionHistorialModel> _sesiones  = [];
-  bool                       _cargando  = true;
+  List<SesionHistorialModel> _sesiones     = [];
+  List<SesionHistorialModel> _sesionesOcultas = [];
+  bool                       _cargando     = true;
   String?                    _error;
+  SuscripcionModel?          _suscripcion;
 
   @override
   void initState()
@@ -53,13 +59,33 @@ class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
   {
     setState(() { _cargando = true; _error = null; });
     try {
+      _suscripcion = await SuscripcionService.obtener();
+
       final response = await ApiClient.instance.get(
         ApiRoutes.historialSesiones(widget.grupoId),
       );
-      final sesiones = (response.data['data'] as List)
+      final todas = (response.data['data'] as List)
           .map((s) => SesionHistorialModel.fromJson(s as Map<String, dynamic>))
           .toList();
-      setState(() { _sesiones = sesiones; _cargando = false; });
+
+      final esMensual = _suscripcion?.isMensual ?? false;
+      if (esMensual) {
+        setState(() { _sesiones = todas; _sesionesOcultas = []; _cargando = false; });
+      } else {
+        // Plan basico: solo ultimos 7 dias
+        final limite = DateTime.now().subtract(const Duration(days: 7));
+        final visibles = todas.where((s) {
+          try {
+            return DateTime.parse(s.fecha).isAfter(limite);
+          } catch (_) { return true; }
+        }).toList();
+        final ocultas = todas.where((s) {
+          try {
+            return !DateTime.parse(s.fecha).isAfter(limite);
+          } catch (_) { return false; }
+        }).toList();
+        setState(() { _sesiones = visibles; _sesionesOcultas = ocultas; _cargando = false; });
+      }
     } catch (_) {
       setState(() { _error = 'Error al cargar el historial.'; _cargando = false; });
     }
@@ -95,6 +121,7 @@ class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
             : Column(
           children: [
             _buildResumenGeneral(context),
+            if (_sesionesOcultas.isNotEmpty) _buildBannerPlanBasico(context),
             Expanded(child: _buildLista(context)),
           ],
         ),
@@ -125,6 +152,50 @@ class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
           Expanded(child: _ResumenItemWidget(valor: totalFaltas.toString(),    label: 'Faltas',      color: AppColors.actionRed)),
           Expanded(child: _ResumenItemWidget(valor: '${promedioAsis.toStringAsFixed(0)}%', label: 'Promedio', color: AppColors.primaryCoral)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBannerPlanBasico(BuildContext context)
+  {
+    return GestureDetector(
+      onTap: () => context.push(AppRouter.suscripcion),
+      child: Container(
+        margin:  const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color:        AppColors.warningOrange.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+          border:       Border.all(color: AppColors.warningOrange.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.lock_outline_rounded, color: AppColors.warningOrange, size: AppSizes.iconM),
+            const SizedBox(width: AppSizes.paddingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${_sesionesOcultas.length} sesiones anteriores ocultas',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color:      AppColors.deepNavy,
+                    ),
+                  ),
+                  Text(
+                    'El Plan Basico muestra solo los ultimos 7 dias. Mejora para ver el historial completo.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color:    AppColors.neutralGrey,
+                      fontSize: AppSizes.fontCaption,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.warningOrange),
+          ],
+        ),
       ),
     );
   }
