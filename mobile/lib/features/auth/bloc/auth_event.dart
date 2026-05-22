@@ -8,6 +8,7 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Dev - Eventos del BLoC de autenticacion
+//   [003] 21/05/2026 - Jorge Alejandro Martinez Toris - Evento actualizar perfil
 // ============================================================
 
 import 'package:equatable/equatable.dart';
@@ -60,4 +61,24 @@ class AuthLogoutRequested extends AuthEvent
 class AuthCheckRequested extends AuthEvent
 {
   const AuthCheckRequested();
+}
+
+class PerfilActualizado extends AuthEvent
+{
+  final String  nombre;
+  final String  apPat;
+  final String? apMat;
+  final String  email;
+  final String? password;
+
+  const PerfilActualizado({
+    required this.nombre,
+    required this.apPat,
+    this.apMat,
+    required this.email,
+    this.password,
+  });
+
+  @override
+  List<Object?> get props => [nombre, apPat, apMat, email, password];
 }

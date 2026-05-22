@@ -23,6 +23,7 @@ class PlanCardWidget extends StatelessWidget
   final List<String> limitaciones;
   final bool         isActual;
   final bool         isRecomendado;
+  final bool         cargando;
   final VoidCallback? onContratar;
 
   const PlanCardWidget({
@@ -34,6 +35,7 @@ class PlanCardWidget extends StatelessWidget
     required this.limitaciones,
     required this.isActual,
     required this.isRecomendado,
+    this.cargando   = false,
     this.onContratar,
   });
 
@@ -235,8 +237,14 @@ class PlanCardWidget extends StatelessWidget
       width:  double.infinity,
       height: AppSizes.heightButton,
       child:  ElevatedButton(
-        onPressed: onContratar,
-        child: const Text('Contratar plan'),
+        onPressed: cargando ? null : onContratar,
+        child: cargando
+            ? const SizedBox(
+                width:  20,
+                height: 20,
+                child:  CircularProgressIndicator(strokeWidth: 2, color: AppColors.baseSurface),
+              )
+            : const Text('Contratar plan'),
       ),
     );
   }

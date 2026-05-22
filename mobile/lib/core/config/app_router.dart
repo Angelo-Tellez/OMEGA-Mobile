@@ -159,6 +159,7 @@ class AppRouter
           final args = state.extra as Map<String, dynamic>;
           return PaypalScreen(
             approvalUrl: args['approvalUrl'] as String,
+            orderId:     args['orderId']     as String,
             planNombre:  args['planNombre']  as String,
             monto:       args['monto']       as String,
           );
