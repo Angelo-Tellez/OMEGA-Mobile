@@ -10,6 +10,7 @@
 //   [001] 21/04/2026 - Dev - Pantalla principal del alumno
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Fix: clave solo visible con sesion activa
 //   [003] 08/05/2026 - Jorge Alejandro Martinez Toris - Polling 30s + aviso sesion activa
+//   [004] 28/05/2026 - Jorge Alejandro Martinez Toris - Refresh al regresar de unirse a materia
 // ============================================================
 
 import 'dart:async';
@@ -26,7 +27,6 @@ import '../../bloc/home_alumno_bloc.dart';
 import '../../bloc/home_alumno_event.dart';
 import '../../bloc/home_alumno_state.dart';
 import '../widgets/materia_card_widget.dart';
-import '../widgets/historial_card_widget.dart';
 
 class HomeAlumnoScreen extends StatelessWidget
 {
@@ -65,7 +65,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
 
   void _startPolling()
   {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_)
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_)
     {
       if (mounted) {
         context.read<HomeAlumnoBloc>().add(const HomeAlumnoStarted());
@@ -99,7 +99,7 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
             final materia = state.materias.firstWhere((m) => m.tieneSesionActiva);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content:         Text('¡Sesion activa en ${materia.materia}! Ingresa tu clave.'),
+                content:         Text('¡Hay una sesión activa en ${materia.materia}! Ingresa tu clave de asistencia.'),
                 backgroundColor: AppColors.electricBlue,
                 duration:        const Duration(seconds: 4),
               ),
@@ -140,7 +140,12 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
               appBar: _buildAppBar(context, nombreAlumno, state),
               floatingActionButton: state is HomeAlumnoLoaded
                   ? FloatingActionButton.extended(
-                onPressed:       () => context.push(AppRouter.unirseMateria),
+                onPressed: () async {
+                  await context.push(AppRouter.unirseMateria);
+                  if (context.mounted) {
+                    context.read<HomeAlumnoBloc>().add(const HomeAlumnoStarted());
+                  }
+                },
                 backgroundColor: AppColors.primaryCoral,
                 foregroundColor: AppColors.baseSurface,
                 icon:            const Icon(Icons.group_add_rounded),
@@ -244,9 +249,6 @@ class _HomeAlumnoViewState extends State<_HomeAlumnoView>
               const SizedBox(height: AppSizes.paddingL),
             ],
             _buildMateriasSection(context, state),
-            const SizedBox(height: AppSizes.paddingL),
-            if (state.materiaActiva != null)
-              HistorialCardWidget(materia: state.materiaActiva!),
             const SizedBox(height: AppSizes.paddingL),
           ],
         ),

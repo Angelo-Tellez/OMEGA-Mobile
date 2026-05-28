@@ -128,7 +128,7 @@ class _AlumnosGrupoScreenState extends State<AlumnosGrupoScreen>
       appBar: AppBar(
         leading: IconButton(
           icon:      const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(_alumnos.length),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,11 +388,31 @@ class _AlumnoCardWidget extends StatelessWidget
 
   Widget _buildAcciones(BuildContext context)
   {
-    return IconButton(
-      icon:      const Icon(Icons.person_remove_outlined),
-      color:     AppColors.actionRed,
-      onPressed: onEliminar,
-      tooltip:   'Eliminar del grupo',
+    return GestureDetector(
+      onTap: onEliminar,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingS, vertical: AppSizes.paddingXS),
+        decoration: BoxDecoration(
+          color:        AppColors.actionRed.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppSizes.radiusInput),
+          border:       Border.all(color: AppColors.actionRed.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_remove_alt_1_rounded, color: AppColors.actionRed, size: 18),
+            const SizedBox(height: 2),
+            Text(
+              'Quitar',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color:    AppColors.actionRed,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

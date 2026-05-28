@@ -16,6 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/connection/api_client.dart';
 import '../../../../core/connection/secure_storage.dart';
 import '../../../../core/constants/api_routes.dart';
+import '../../../../core/services/suscripcion_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../data/usuario_model.dart';
@@ -76,6 +77,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
         data['usuario'] as Map<String, dynamic>,
       );
 
+      SuscripcionService.invalidar(); // nuevo usuario = nuevo plan
       ApiClient.setToken(token);
       await SecureStorage.guardarTokens(
         accessToken:  token,
@@ -150,6 +152,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState>
     try {
       await ApiClient.instance.post(ApiRoutes.logout);
     } catch (_) {}
+    SuscripcionService.invalidar(); // limpiar cache para que el proximo usuario no herede el plan
     await SecureStorage.limpiarTodo();
     ApiClient.clearToken();
     emit(const AuthInitial());

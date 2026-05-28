@@ -9,8 +9,10 @@
 // Changelog:
 //   [003] 28/04/2026 - Jorge Alejandro Martinez Toris - Pantalla principal del docente
 //   [004] 22/05/2026 - Jorge Alejandro Martinez Toris - Gate plan: limite de grupos para basico
+//   [005] 28/05/2026 - Jorge Alejandro Martinez Toris - Polling 30s silencioso + FAB con texto + refresh al volver
 // ============================================================
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -24,7 +26,6 @@ import '../../../../features/auth/bloc/auth_state.dart';
 import '../../bloc/home_docente_bloc.dart';
 import '../../bloc/home_docente_event.dart';
 import '../../bloc/home_docente_state.dart';
-import '../widgets/institucion_chip_widget.dart';
 import '../widgets/grupo_card_widget.dart';
 import '../widgets/sesion_activa_card_widget.dart';
 import '../dialogs/cerrar_sesion_dialog.dart';
@@ -44,9 +45,41 @@ class HomeDocenteScreen extends StatelessWidget
   }
 }
 
-class _HomeDocenteView extends StatelessWidget
+class _HomeDocenteView extends StatefulWidget
 {
   const _HomeDocenteView();
+
+  @override
+  State<_HomeDocenteView> createState() => _HomeDocenteViewState();
+}
+
+class _HomeDocenteViewState extends State<_HomeDocenteView>
+{
+  Timer? _pollingTimer;
+
+  @override
+  void initState()
+  {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startPolling());
+  }
+
+  void _startPolling()
+  {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_)
+    {
+      if (mounted) {
+        context.read<HomeDocenteBloc>().add(const HomeDocenteStarted(docenteId: 1));
+      }
+    });
+  }
+
+  @override
+  void dispose()
+  {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context)
@@ -120,17 +153,13 @@ class _HomeDocenteView extends StatelessWidget
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        FloatingActionButton(
+        FloatingActionButton.extended(
           heroTag:         'fab_institucion',
-          mini:            true,
           backgroundColor: AppColors.headingDark,
           foregroundColor: AppColors.baseSurface,
-          tooltip:         'Agregar institucion',
-          onPressed: () => context.push(
-            AppRouter.agregarInstitucion,
-            extra: {'esOnboarding': false},
-          ),
-          child: const Icon(Icons.add_business_rounded),
+          icon:            const Icon(Icons.add_business_rounded),
+          label:           const Text('Nueva institución'),
+          onPressed: () => _onNuevaInstitucion(context),
         ),
         const SizedBox(height: AppSizes.paddingS),
         FloatingActionButton.extended(
@@ -143,6 +172,17 @@ class _HomeDocenteView extends StatelessWidget
         ),
       ],
     );
+  }
+
+  Future<void> _onNuevaInstitucion(BuildContext context) async
+  {
+    await context.push(
+      AppRouter.agregarInstitucion,
+      extra: {'esOnboarding': false},
+    );
+    if (mounted) {
+      context.read<HomeDocenteBloc>().add(const HomeDocenteStarted(docenteId: 1));
+    }
   }
 
   void _onLogout(BuildContext context)
@@ -200,13 +240,16 @@ class _HomeDocenteView extends StatelessWidget
     }
 
     if (!context.mounted) return;
-    context.push(
+    await context.push(
       AppRouter.agregarGrupo,
       extra: {
         'institucionId':     state.institucionActiva!.id,
         'nombreInstitucion': state.institucionActiva!.nombre,
       },
     );
+    if (context.mounted) {
+      context.read<HomeDocenteBloc>().add(const HomeDocenteStarted(docenteId: 1));
+    }
   }
 
   Widget _buildBodyContent(BuildContext context, HomeDocenteState state)
@@ -260,6 +303,27 @@ class _HomeDocenteView extends StatelessWidget
 
   Widget _buildInstitucionesSection(BuildContext context, HomeDocenteLoaded state)
   {
+    if (state.instituciones.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Mis instituciones',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontSize: AppSizes.fontTitle,
+            ),
+          ),
+          const SizedBox(height: AppSizes.paddingM),
+          Text(
+            'Aún no tienes instituciones. Crea una con el botón "Nueva institución".',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.neutralGrey,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -270,22 +334,56 @@ class _HomeDocenteView extends StatelessWidget
           ),
         ),
         const SizedBox(height: AppSizes.paddingM),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: state.instituciones.map((inst) {
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSizes.paddingS),
-                child: InstitucionChipWidget(
-                  institucion: inst,
-                  isSelected:  state.institucionActiva?.id == inst.id,
-                  onTap: () => context.read<HomeDocenteBloc>().add(
-                    InstitucionSeleccionada(institucionId: inst.id),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<int>(
+                value:       state.institucionActiva?.id,
+                isExpanded:  true,
+                decoration:  const InputDecoration(
+                  prefixIcon:      Icon(Icons.account_balance_rounded),
+                  contentPadding:  EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingM,
+                    vertical:   AppSizes.paddingS,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
+                items: state.instituciones.map((inst) {
+                  return DropdownMenuItem<int>(
+                    value: inst.id,
+                    child: Text(
+                      inst.nombre,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (id) {
+                  if (id != null) {
+                    context.read<HomeDocenteBloc>().add(
+                      InstitucionSeleccionada(institucionId: id),
+                    );
+                  }
+                },
+              ),
+            ),
+            if (state.institucionActiva != null) ...[
+              const SizedBox(width: AppSizes.paddingS),
+              IconButton(
+                tooltip: 'Configurar rubros',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.subtleWarm,
+                  foregroundColor: AppColors.primaryCoral,
+                ),
+                icon: const Icon(Icons.settings_rounded),
+                onPressed: () => context.push(
+                  AppRouter.rubros,
+                  extra: {
+                    'institucionId':     state.institucionActiva!.id,
+                    'nombreInstitucion': state.institucionActiva!.nombre,
+                  },
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );

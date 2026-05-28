@@ -8,6 +8,7 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [001] 21/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de materia con progreso para el alumno
+//   [002] 28/05/2026 - Jorge Alejandro Martinez Toris - Textos amigables + contadores reales + rubros en card
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -51,6 +52,8 @@ class MateriaCardWidget extends StatelessWidget
             _buildHeader(context),
             const SizedBox(height: AppSizes.paddingM),
             _buildProgressBar(context),
+            const SizedBox(height: AppSizes.paddingM),
+            _buildContadores(context),
             const SizedBox(height: AppSizes.paddingM),
             _buildRubrosChips(context),
             if (materia.enRiesgo || materia.limiteExcedido) ...[
@@ -117,23 +120,11 @@ class MateriaCardWidget extends StatelessWidget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${materia.sesionesPresente + materia.sesionesJustificada}/${materia.totalSesiones} asistencias',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.neutralGrey,
-              ),
-            ),
-            Text(
-              '${materia.faltasPermitidas} faltas restantes',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color:      materia.enRiesgo ? AppColors.actionRed : AppColors.neutralGrey,
-                fontWeight: materia.enRiesgo ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
+        Text(
+          '${materia.sesionesPresente + materia.sesionesJustificada}/${materia.totalSesiones} clases asistidas',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.neutralGrey,
+          ),
         ),
         const SizedBox(height: AppSizes.paddingXS),
         ClipRRect(
@@ -146,6 +137,44 @@ class MateriaCardWidget extends StatelessWidget
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildContadores(BuildContext context)
+  {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingM,
+        vertical:   AppSizes.paddingS,
+      ),
+      decoration: BoxDecoration(
+        color:        AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusInput),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _ContadorItemWidget(
+            valor: materia.sesionesPresente,
+            label: 'Presentes',
+            color: AppColors.successGreen,
+            icon:  Icons.check_circle_outline_rounded,
+          )),
+          Container(width: 1, height: 30, color: AppColors.surface),
+          Expanded(child: _ContadorItemWidget(
+            valor: materia.sesionesFalta,
+            label: 'Faltas',
+            color: AppColors.actionRed,
+            icon:  Icons.cancel_outlined,
+          )),
+          Container(width: 1, height: 30, color: AppColors.surface),
+          Expanded(child: _ContadorItemWidget(
+            valor: materia.sesionesJustificada,
+            label: 'Justificadas',
+            color: AppColors.warningOrange,
+            icon:  Icons.info_outline_rounded,
+          )),
+        ],
+      ),
     );
   }
 
@@ -198,8 +227,10 @@ class MateriaCardWidget extends StatelessWidget
           Expanded(
             child: Text(
               esLimiteExcedido
-                  ? 'Limite de faltas excedido. Perdiste el derecho a ordinario.'
-                  : 'Riesgo proximo. Solo te quedan ${materia.faltasPermitidas} falta(s).',
+                  ? 'Límite de faltas excedido. Perdiste el derecho a presentar ordinario.'
+                  : materia.faltasPermitidas == 1
+                      ? '¡Cuidado! Solo te queda 1 falta antes de perder el ordinario.'
+                      : '¡Atención! Solo te quedan ${materia.faltasPermitidas} faltas antes de perder el ordinario.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color:    esLimiteExcedido ? AppColors.actionRed : AppColors.onyxGrey,
                 fontSize: AppSizes.fontCaption,
@@ -220,6 +251,51 @@ class MateriaCardWidget extends StatelessWidget
       return AppColors.warningOrange;
     }
     return AppColors.actionRed;
+  }
+}
+
+class _ContadorItemWidget extends StatelessWidget
+{
+  final int      valor;
+  final String   label;
+  final Color    color;
+  final IconData icon;
+
+  const _ContadorItemWidget({
+    required this.valor,
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context)
+  {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              '$valor',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color:      color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontSize: AppSizes.fontCaption,
+            color:    AppColors.neutralGrey,
+          ),
+        ),
+      ],
+    );
   }
 }
 

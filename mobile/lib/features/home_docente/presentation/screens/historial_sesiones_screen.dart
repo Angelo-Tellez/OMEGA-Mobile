@@ -13,6 +13,7 @@
 // ============================================================
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import '../../../../core/connection/api_client.dart';
 import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -42,11 +43,12 @@ class HistorialSesionesScreen extends StatefulWidget
 
 class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
 {
-  List<SesionHistorialModel> _sesiones     = [];
+  List<SesionHistorialModel> _sesiones        = [];
   List<SesionHistorialModel> _sesionesOcultas = [];
-  bool                       _cargando     = true;
+  bool                       _cargando        = true;
   String?                    _error;
   SuscripcionModel?          _suscripcion;
+  DateTime?                  _fechaFiltro;
 
   @override
   void initState()
@@ -122,9 +124,76 @@ class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
           children: [
             _buildResumenGeneral(context),
             if (_sesionesOcultas.isNotEmpty) _buildBannerPlanBasico(context),
+            _buildFiltroDeFecha(context),
             Expanded(child: _buildLista(context)),
           ],
         ),
+      ),
+    );
+  }
+
+  List<SesionHistorialModel> get _sesionesFiltradas
+  {
+    if (_fechaFiltro == null) return _sesiones;
+    final fmt = DateFormat('yyyy-MM-dd');
+    final buscada = fmt.format(_fechaFiltro!);
+    return _sesiones.where((s) => s.fecha.startsWith(buscada)).toList();
+  }
+
+  Widget _buildFiltroDeFecha(BuildContext context)
+  {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.paddingM, AppSizes.paddingS, AppSizes.paddingM, 0,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final fecha = await showDatePicker(
+                  context:     context,
+                  initialDate: _fechaFiltro ?? DateTime.now(),
+                  firstDate:   DateTime(2020),
+                  lastDate:    DateTime.now(),
+                  builder: (context, child) => Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: Theme.of(context).colorScheme.copyWith(
+                        primary: AppColors.primaryCoral,
+                      ),
+                    ),
+                    child: child!,
+                  ),
+                );
+                if (fecha != null) setState(() => _fechaFiltro = fecha);
+              },
+              icon:  const Icon(Icons.calendar_today_outlined, size: AppSizes.iconS),
+              label: Text(
+                _fechaFiltro == null
+                    ? 'Filtrar por fecha'
+                    : DateFormat('dd/MM/yyyy').format(_fechaFiltro!),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _fechaFiltro == null ? AppColors.neutralGrey : AppColors.primaryCoral,
+                side: BorderSide(
+                  color: _fechaFiltro == null ? AppColors.surface : AppColors.primaryCoral,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusButton),
+                ),
+              ),
+            ),
+          ),
+          if (_fechaFiltro != null) ...[
+            const SizedBox(width: AppSizes.paddingS),
+            IconButton(
+              icon:      const Icon(Icons.close_rounded),
+              color:     AppColors.neutralGrey,
+              tooltip:   'Limpiar filtro',
+              onPressed: () => setState(() => _fechaFiltro = null),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -202,19 +271,27 @@ class _HistorialSesionesScreenState extends State<HistorialSesionesScreen>
 
   Widget _buildLista(BuildContext context)
   {
-    if (_sesiones.isEmpty) {
-      return const Center(child: Text('No hay sesiones registradas.'));
+    final lista = _sesionesFiltradas;
+    if (lista.isEmpty) {
+      return Center(
+        child: Text(
+          _fechaFiltro != null
+              ? 'Sin sesiones el ${DateFormat('dd/MM/yyyy').format(_fechaFiltro!)}'
+              : 'No hay sesiones registradas.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutralGrey),
+        ),
+      );
     }
     return RefreshIndicator(
       color:     AppColors.primaryCoral,
       onRefresh: _cargarHistorial,
       child: ListView.separated(
-        padding:          const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-        itemCount:        _sesiones.length,
+        padding:          const EdgeInsets.fromLTRB(AppSizes.paddingM, AppSizes.paddingS, AppSizes.paddingM, AppSizes.paddingM),
+        itemCount:        lista.length,
         separatorBuilder: (_, __) => const SizedBox(height: AppSizes.paddingS),
         itemBuilder: (context, index)
         {
-          final sesion = _sesiones[index];
+          final sesion = lista[index];
           return _SesionCardWidget(
             sesion:        sesion,
             nombreGrupo:   widget.nombreGrupo,

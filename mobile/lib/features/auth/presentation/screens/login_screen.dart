@@ -100,14 +100,10 @@ class _LoginScreenState extends State<LoginScreen>
                     _buildEmailField(),
                     const SizedBox(height: AppSizes.paddingM),
                     _buildPasswordField(),
-                    const SizedBox(height: AppSizes.paddingS),
-                    _buildForgotPassword(context),
                     const SizedBox(height: AppSizes.paddingL),
                     _buildLoginButton(context),
                     const SizedBox(height: AppSizes.paddingM),
                     _buildRegisterLink(context),
-                    const SizedBox(height: AppSizes.paddingL),
-                    _buildCuentasPrueba(context),
                     const SizedBox(height: AppSizes.paddingXL),
                   ],
                 ),
@@ -213,30 +209,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildForgotPassword(BuildContext context)
-  {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () => context.push(AppRouter.recuperarPassword),
-        style: TextButton.styleFrom(
-          minimumSize: Size.zero,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingS,
-            vertical:   AppSizes.paddingXS,
-          ),
-        ),
-        child: Text(
-          'Olvide mi contrasena',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color:      AppColors.headingDark,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildLoginButton(BuildContext context)
   {
     return BlocBuilder<AuthBloc, AuthState>(
@@ -293,82 +265,4 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildCuentasPrueba(BuildContext context)
-  {
-    return Container(
-      width:   double.infinity,
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      decoration: BoxDecoration(
-        color:        AppColors.cloudBlue,
-        borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.bug_report_outlined,
-                size:  AppSizes.iconS,
-                color: AppColors.deepNavy,
-              ),
-              const SizedBox(width: AppSizes.paddingXS),
-              Text(
-                'Cuentas de prueba',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color:      AppColors.deepNavy,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.paddingS),
-          _buildCuentaItem(context, 'Docente con instituciones', 'docente@test.com'),
-          _buildCuentaItem(context, 'Alumno', 'alumno@test.com'),
-          const SizedBox(height: AppSizes.paddingXS),
-          Text(
-            'Contrasena para todas: 123456',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color:    AppColors.deepNavy,
-              fontSize: AppSizes.fontCaption,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCuentaItem(BuildContext context, String label, String email)
-  {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.paddingXS),
-      child: GestureDetector(
-        onTap: ()
-        {
-          _emailController.text    = email;
-          _passwordController.text = '123456';
-        },
-        child: Row(
-          children: [
-            const Icon(
-              Icons.touch_app_outlined,
-              size:  12,
-              color: AppColors.headingDark,
-            ),
-            const SizedBox(width: AppSizes.paddingXS),
-            Expanded(
-              child: Text(
-                '$label — $email',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:    AppColors.headingDark,
-                  fontSize: AppSizes.fontCaption,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

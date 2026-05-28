@@ -8,16 +8,20 @@
 // ------------------------------------------------------------
 // Changelog:
 //   [002] 27/04/2026 - Jorge Alejandro Martinez Toris - Tarjeta de grupo para el home docente
+//   [003] 28/05/2026 - Jorge Alejandro Martinez Toris - StatefulWidget: conteo local de alumnos
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/config/app_router.dart';
+import '../../bloc/home_docente_bloc.dart';
+import '../../bloc/home_docente_event.dart';
 import '../../data/grupo_model.dart';
 
-class GrupoCardWidget extends StatelessWidget
+class GrupoCardWidget extends StatefulWidget
 {
   final GrupoModel   grupo;
   final bool         sesionActiva;
@@ -31,6 +35,59 @@ class GrupoCardWidget extends StatelessWidget
     required this.onAbrirSesion,
     required this.onCerrarSesion,
   });
+
+  @override
+  State<GrupoCardWidget> createState() => _GrupoCardWidgetState();
+}
+
+class _GrupoCardWidgetState extends State<GrupoCardWidget>
+{
+  late int _noAlumnos;
+
+  @override
+  void initState()
+  {
+    super.initState();
+    _noAlumnos = widget.grupo.noAlumnos;
+  }
+
+  /// Cuando el BLoC emite un nuevo estado con datos actualizados,
+  /// sincronizamos el conteo local si el backend entregó un valor mayor.
+  @override
+  void didUpdateWidget(GrupoCardWidget oldWidget)
+  {
+    super.didUpdateWidget(oldWidget);
+    final nuevoConteo = widget.grupo.noAlumnos;
+    // Solo actualizamos si el valor del backend cambió respecto al widget anterior.
+    // Si el conteo local es mayor (proviene del endpoint de alumnos), lo conservamos.
+    if (nuevoConteo != oldWidget.grupo.noAlumnos && nuevoConteo > _noAlumnos) {
+      setState(() => _noAlumnos = nuevoConteo);
+    }
+  }
+
+  Future<void> _irAAlumnos() async
+  {
+    // go_router devuelve el valor que pasó la pantalla al hacer pop.
+    // alumnos_grupo_screen hace pop(_alumnos.length) al presionar atrás.
+    final resultado = await context.push<int>(
+      AppRouter.alumnosGrupo,
+      extra: {
+        'grupoId':       widget.grupo.id,
+        'nombreGrupo':   widget.grupo.nombre,
+        'nombreMateria': widget.grupo.materia,
+      },
+    );
+
+    if (!mounted) return;
+
+    // Actualizamos el chip de inmediato con el conteo real devuelto por la pantalla.
+    if (resultado != null) {
+      setState(() => _noAlumnos = resultado);
+    }
+
+    // También disparamos un refresh del BLoC para sincronizar todo.
+    context.read<HomeDocenteBloc>().add(const HomeDocenteStarted(docenteId: 1));
+  }
 
   @override
   Widget build(BuildContext context)
@@ -80,14 +137,14 @@ class GrupoCardWidget extends StatelessWidget
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                grupo.materia,
+                widget.grupo.materia,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                   color:      AppColors.deepNavy,
                 ),
               ),
               Text(
-                grupo.nombre,
+                widget.grupo.nombre,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.neutralGrey,
                 ),
@@ -107,15 +164,15 @@ class GrupoCardWidget extends StatelessWidget
       children: [
         _InfoChipWidget(
           icon:  Icons.people_outline_rounded,
-          label: '${grupo.noAlumnos} alumnos',
+          label: '$_noAlumnos alumnos',       // <-- conteo local, se actualiza al instante
         ),
         _InfoChipWidget(
           icon:  Icons.calendar_today_outlined,
-          label: grupo.periodo ?? 'Sin periodo',
+          label: widget.grupo.periodo ?? 'Sin periodo',
         ),
         _InfoChipWidget(
           icon:  Icons.vpn_key_outlined,
-          label: grupo.codigoInv ?? 'Sin codigo',
+          label: widget.grupo.codigoInv ?? 'Sin codigo',
         ),
       ],
     );
@@ -126,33 +183,40 @@ class GrupoCardWidget extends StatelessWidget
     return Row(
       children: [
         Expanded(
-          child: _AccesoRapidoWidget(
-            icon:  Icons.people_outline_rounded,
-            label: 'Alumnos',
-            color: AppColors.headingDark,
-            onTap: () => context.push(
-              AppRouter.alumnosGrupo,
-              extra: {
-                'grupoId':       grupo.id,
-                'nombreGrupo':   grupo.nombre,
-                'nombreMateria': grupo.materia,
-              },
+          child: OutlinedButton.icon(
+            onPressed: _irAAlumnos,
+            icon:  const Icon(Icons.people_outline_rounded, size: AppSizes.iconS),
+            label: const Text('Alumnos'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.headingDark,
+              side:            const BorderSide(color: AppColors.headingDark),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusButton),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
             ),
           ),
         ),
         const SizedBox(width: AppSizes.paddingS),
         Expanded(
-          child: _AccesoRapidoWidget(
-            icon:  Icons.history_edu_rounded,
-            label: 'Sesiones',
-            color: AppColors.headingDark,
-            onTap: () => context.push(
+          child: OutlinedButton.icon(
+            onPressed: () => context.push(
               AppRouter.historialSesiones,
               extra: {
-                'grupoId':       grupo.id,
-                'nombreGrupo':   grupo.nombre,
-                'nombreMateria': grupo.materia,
+                'grupoId':       widget.grupo.id,
+                'nombreGrupo':   widget.grupo.nombre,
+                'nombreMateria': widget.grupo.materia,
               },
+            ),
+            icon:  const Icon(Icons.history_edu_rounded, size: AppSizes.iconS),
+            label: const Text('Sesiones'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.headingDark,
+              side:            const BorderSide(color: AppColors.headingDark),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusButton),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
             ),
           ),
         ),
@@ -162,12 +226,12 @@ class GrupoCardWidget extends StatelessWidget
 
   Widget _buildCardActions(BuildContext context)
   {
-    if (sesionActiva) {
+    if (widget.sesionActiva) {
       return SizedBox(
         width:  double.infinity,
         height: AppSizes.heightButton,
         child:  OutlinedButton.icon(
-          onPressed: onCerrarSesion,
+          onPressed: widget.onCerrarSesion,
           icon:  const Icon(Icons.stop_circle_outlined, color: AppColors.actionRed),
           label: const Text('Cerrar sesion activa'),
           style: OutlinedButton.styleFrom(
@@ -185,56 +249,9 @@ class GrupoCardWidget extends StatelessWidget
       width:  double.infinity,
       height: AppSizes.heightButton,
       child:  ElevatedButton.icon(
-        onPressed: onAbrirSesion,
+        onPressed: widget.onAbrirSesion,
         icon:  const Icon(Icons.play_circle_outline_rounded),
         label: const Text('Abrir sesion'),
-      ),
-    );
-  }
-}
-
-class _AccesoRapidoWidget extends StatelessWidget
-{
-  final IconData     icon;
-  final String       label;
-  final Color        color;
-  final VoidCallback onTap;
-
-  const _AccesoRapidoWidget({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context)
-  {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingM,
-          vertical:   AppSizes.paddingS,
-        ),
-        decoration: BoxDecoration(
-          color:        AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusInput),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: AppSizes.iconS, color: color),
-            const SizedBox(width: AppSizes.paddingXS),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color:      color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

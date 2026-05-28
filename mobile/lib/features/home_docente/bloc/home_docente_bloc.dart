@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 24/04/2026 - Dev - BLoC home docente con datos mock
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend
+//   [003] 28/05/2026 - Jorge Alejandro Martinez Toris - Polling silencioso: preserva sesion e institucion activa
 // ============================================================
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,7 +36,14 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
       Emitter<HomeDocenteState> emit,
       ) async
   {
-    emit(const HomeDocenteLoading());
+    // Preservar estado actual para polling silencioso
+    final prev = state is HomeDocenteLoaded ? state as HomeDocenteLoaded : null;
+
+    // Solo mostrar loading en la carga inicial
+    if (prev == null) {
+      emit(const HomeDocenteLoading());
+    }
+
     try {
       final response = await ApiClient.instance.get(
         ApiRoutes.instituciones,
@@ -53,20 +61,31 @@ class HomeDocenteBloc extends Bloc<HomeDocenteEvent, HomeDocenteState>
         return;
       }
 
-      final primera = instituciones.first;
-      final grupos  = await _cargarGrupos(primera.id);
+      // Mantener la institucion que el docente tenia seleccionada
+      final instActiva = prev?.institucionActiva != null
+          ? instituciones.firstWhere(
+              (i) => i.id == prev!.institucionActiva!.id,
+              orElse: () => instituciones.first,
+            )
+          : instituciones.first;
+
+      final grupos = await _cargarGrupos(instActiva.id);
 
       emit(HomeDocenteLoaded(
         instituciones:     instituciones,
-        institucionActiva: primera,
+        institucionActiva: instActiva,
         grupos:            grupos,
+        sesionActiva:      prev?.sesionActiva, // preservar sesion activa durante polling
+        claveActiva:       prev?.claveActiva,
       ));
     } on DioException catch (e) {
+      if (prev != null) return; // En polling silencioso no mostrar error
       emit(HomeDocenteError(
         mensaje: e.response?.data?['message'] as String?
             ?? 'Error al cargar los datos.',
       ));
     } catch (_) {
+      if (prev != null) return; // En polling silencioso no mostrar error
       emit(const HomeDocenteError(mensaje: 'Error de conexion.'));
     }
   }

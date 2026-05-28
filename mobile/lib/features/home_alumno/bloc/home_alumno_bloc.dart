@@ -10,6 +10,7 @@
 //   [001] 21/04/2026 - Dev - BLoC home alumno con datos mock
 //   [002] 07/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend
 //   [003] 07/05/2026 - Jorge Alejandro Martinez Toris - Fix: materiaActiva solo si hay sesion activa
+//   [004] 28/05/2026 - Jorge Alejandro Martinez Toris - Polling silencioso: no emite loading si ya hay datos
 // ============================================================
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,7 +34,10 @@ class HomeAlumnoBloc extends Bloc<HomeAlumnoEvent, HomeAlumnoState>
       Emitter<HomeAlumnoState> emit,
       ) async
   {
-    emit(const HomeAlumnoLoading());
+    // Solo mostrar loading en la carga inicial; el polling de fondo es silencioso
+    if (state is! HomeAlumnoLoaded) {
+      emit(const HomeAlumnoLoading());
+    }
     try {
       final response = await ApiClient.instance.get(ApiRoutes.alumnoGrupos);
 

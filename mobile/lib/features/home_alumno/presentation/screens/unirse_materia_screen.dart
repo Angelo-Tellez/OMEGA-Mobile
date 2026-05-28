@@ -9,6 +9,7 @@
 // Changelog:
 //   [001] 24/04/2026 - Dev - Pantalla para unirse a materia por codigo
 //   [002] 08/05/2026 - Jorge Alejandro Martinez Toris - Conexion backend real
+//   [003] 28/05/2026 - Jorge Alejandro Martinez Toris - Volver al home automaticamente al unirse
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -55,13 +56,15 @@ class _UnirseMateriaScreemState extends State<UnirseMateriaScreem>
       setState(() => _cargando = false);
 
       final grupo = response.data['data'];
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:         Text('Te uniste a ${grupo['materia']} correctamente'),
+          content:         Text('¡Te uniste a ${grupo['materia']} correctamente!'),
           backgroundColor: AppColors.successGreen,
         ),
       );
-      _codigoController.clear();
+      // Regresar al home para que se vea la nueva materia
+      Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
       setState(() => _cargando = false);

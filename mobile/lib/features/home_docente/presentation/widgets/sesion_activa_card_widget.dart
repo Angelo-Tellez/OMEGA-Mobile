@@ -46,7 +46,7 @@ class _SesionActivaCardWidgetState extends State<SesionActivaCardWidget>
   void initState()
   {
     super.initState();
-    _segundos = DateTime.now().difference(widget.sesion.horaApertura).inSeconds;
+    _segundos = 0;
     _startTimer();
     _startPulse();
   }

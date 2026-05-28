@@ -10,10 +10,18 @@
 //   [001] 27/04/2026 - Jorge Alejandro Martinez Toris - Pantalla de reportes
 //   [002] 08/05/2026 - Jorge Alejandro Martinez Toris - Conexion real al backend
 //   [003] 22/05/2026 - Jorge Alejandro Martinez Toris - Gate plan mensual
+//   [004] 28/05/2026 - Jorge Alejandro Martinez Toris - Exportacion PDF y Excel
 // ============================================================
 
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:excel/excel.dart' as xl;
 import '../../../../core/connection/api_client.dart';
 import '../../../../core/constants/api_routes.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -111,6 +119,82 @@ class _ReportesScreenState extends State<ReportesScreen>
     }
   }
 
+  Future<void> _exportarPDF() async
+  {
+    if (_grupoSel == null || _alumnos.isEmpty) return;
+
+    final doc = pw.Document();
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin:     const pw.EdgeInsets.all(32),
+        build: (pw.Context ctx) => [
+          pw.Text(
+            'Reporte de Asistencias',
+            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Text('Institución: ${_institucionSel?.nombre ?? ''}'),
+          pw.Text('Grupo: ${_grupoSel!.materia} - ${_grupoSel!.nombre}'),
+          pw.SizedBox(height: 16),
+          pw.Table.fromTextArray(
+            headerStyle:    pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey100),
+            cellAlignment:  pw.Alignment.centerLeft,
+            headers: const ['Alumno', 'Asistencias', 'Total', '%'],
+            data: _alumnos.map((a) => [
+              '${a.nombre} ${a.apPat}',
+              '${a.sesionesAsistidas}',
+              '${a.totalSesiones}',
+              '${a.porcentajeAsistencia.toStringAsFixed(0)}%',
+            ]).toList(),
+          ),
+        ],
+      ),
+    );
+
+    await Printing.sharePdf(
+      bytes:    await doc.save(),
+      filename: 'reporte_${_grupoSel!.nombre}.pdf',
+    );
+  }
+
+  Future<void> _exportarExcel() async
+  {
+    if (_grupoSel == null || _alumnos.isEmpty) return;
+
+    final workbook = xl.Excel.createExcel();
+    final sheet    = workbook['Asistencias'];
+    workbook.delete('Sheet1');
+
+    // Encabezados
+    sheet.appendRow([
+      xl.TextCellValue('Alumno'),
+      xl.TextCellValue('Asistencias'),
+      xl.TextCellValue('Total'),
+      xl.TextCellValue('%'),
+    ]);
+
+    // Datos
+    for (final a in _alumnos) {
+      sheet.appendRow([
+        xl.TextCellValue('${a.nombre} ${a.apPat}'),
+        xl.IntCellValue(a.sesionesAsistidas),
+        xl.IntCellValue(a.totalSesiones),
+        xl.TextCellValue('${a.porcentajeAsistencia.toStringAsFixed(0)}%'),
+      ]);
+    }
+
+    final bytes = workbook.save();
+    if (bytes == null) return;
+
+    final dir  = await getTemporaryDirectory();
+    final path = '${dir.path}/reporte_${_grupoSel!.nombre}.xlsx';
+    final file = File(path);
+    await file.writeAsBytes(bytes);
+    await OpenFile.open(path);
+  }
+
   @override
   Widget build(BuildContext context)
   {
@@ -121,6 +205,22 @@ class _ReportesScreenState extends State<ReportesScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Reportes'),
+        actions: [
+          if (_grupoSel != null && _alumnos.isNotEmpty) ...[
+            IconButton(
+              icon:    const Icon(Icons.picture_as_pdf_outlined),
+              color:   AppColors.actionRed,
+              tooltip: 'Exportar PDF',
+              onPressed: _exportarPDF,
+            ),
+            IconButton(
+              icon:    const Icon(Icons.table_chart_outlined),
+              color:   AppColors.successGreen,
+              tooltip: 'Exportar Excel',
+              onPressed: _exportarExcel,
+            ),
+          ],
+        ],
       ),
       body: SafeArea(
         child: _cargandoInst
@@ -182,7 +282,7 @@ class _ReportesScreenState extends State<ReportesScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Selecciona un grupo',
+            'Selecciona una institución y grupo',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w600, color: AppColors.deepNavy,
             ),
@@ -260,22 +360,22 @@ class _ReportesScreenState extends State<ReportesScreen>
 
     return Row(
       children: [
-        _buildStatChip('Total', '$totalAlumnos', AppColors.deepNavy),
+        _buildStatChip('Total',      '$totalAlumnos', AppColors.deepNavy,     null),
         const SizedBox(width: AppSizes.paddingS),
-        _buildStatChip('≥80%', '$aprobados', AppColors.successGreen),
+        _buildStatChip('Aprobados',  '$aprobados',    AppColors.successGreen,  '≥ 80%'),
         const SizedBox(width: AppSizes.paddingS),
-        _buildStatChip('Riesgo', '$enRiesgo', AppColors.warningOrange),
+        _buildStatChip('En riesgo',  '$enRiesgo',     AppColors.warningOrange, '60-79%'),
         const SizedBox(width: AppSizes.paddingS),
-        _buildStatChip('<60%', '$reprobados', AppColors.actionRed),
+        _buildStatChip('Reprobados', '$reprobados',   AppColors.actionRed,     '< 60%'),
       ],
     );
   }
 
-  Widget _buildStatChip(String label, String valor, Color color)
+  Widget _buildStatChip(String label, String valor, Color color, String? rango)
   {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
+        padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS, horizontal: 4),
         decoration: BoxDecoration(
           color:        color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppSizes.radiusInput),
@@ -291,10 +391,19 @@ class _ReportesScreenState extends State<ReportesScreen>
             ),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: color, fontSize: AppSizes.fontCaption,
+                color: color, fontSize: AppSizes.fontCaption, fontWeight: FontWeight.w600,
               ),
             ),
+            if (rango != null)
+              Text(
+                rango,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color.withValues(alpha: 0.7), fontSize: 9,
+                ),
+              ),
           ],
         ),
       ),

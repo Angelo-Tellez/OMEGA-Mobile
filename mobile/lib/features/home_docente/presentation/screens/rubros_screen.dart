@@ -146,6 +146,18 @@ class _RubrosScreenState extends State<RubrosScreen>
 
   Future<void> _onEliminarPressed(RubroModel rubro) async
   {
+    if (_rubros.length <= 1) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:         Text('Debe haber al menos un rubro de evaluacion'),
+            backgroundColor: AppColors.warningOrange,
+          ),
+        );
+      }
+      return;
+    }
+
     final confirmar = await showDialog<bool>(
       context:            context,
       barrierDismissible: false,
